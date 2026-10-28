@@ -1,27 +1,40 @@
-// Native extras (haptics, share sheet, durable storage) when running inside the iOS app; web fallbacks otherwise.
+// Native extras when running inside the iOS app (an Expo app that shows this page in a WebView), web fallbacks
+// otherwise. The app talks to the native side with postMessage; see mobile/App.tsx for the other end.
 
-import { Capacitor } from '@capacitor/core';
-import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
-import { Preferences } from '@capacitor/preferences';
-import { Share } from '@capacitor/share';
+type NativeMessage =
+  | { type: 'haptic'; kind: 'light' | 'success' | 'warning' }
+  | { type: 'share'; text: string; url: string }
+  | { type: 'save'; key: string; value: string }
+  | { type: 'open'; url: string };
 
-export const isNative = Capacitor.isNativePlatform();
+type NativeWindow = Window & {
+  ReactNativeWebView?: { postMessage(data: string): void };
+  /** Set by the native app before the page loads: saved values from durable storage. */
+  __ORBIT_NATIVE__?: { saved: Record<string, string> };
+};
+
+const w = window as NativeWindow;
+export const isNative = Boolean(w.__ORBIT_NATIVE__);
+
+function post(msg: NativeMessage): void {
+  w.ReactNativeWebView?.postMessage(JSON.stringify(msg));
+}
 
 export function tapHaptic(): void {
-  if (isNative) void Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+  if (isNative) post({ type: 'haptic', kind: 'light' });
 }
 
 export function resultHaptic(won: boolean): void {
-  if (isNative) void Haptics.notification({ type: won ? NotificationType.Success : NotificationType.Warning }).catch(() => {});
+  if (isNative) post({ type: 'haptic', kind: won ? 'success' : 'warning' });
 }
 
 /** Opens the share sheet. Returns 'shared', 'copied' or 'failed'. */
 export async function shareLink(text: string, url: string): Promise<'shared' | 'copied' | 'failed'> {
+  if (isNative) {
+    post({ type: 'share', text, url });
+    return 'shared';
+  }
   try {
-    if (isNative) {
-      await Share.share({ text, url, dialogTitle: 'Share this sim' });
-      return 'shared';
-    }
     if (navigator.share) {
       await navigator.share({ text, url });
       return 'shared';
@@ -39,10 +52,8 @@ export async function shareLink(text: string, url: string): Promise<'shared' | '
 }
 
 export async function loadValue(key: string): Promise<string | null> {
-  if (isNative) {
-    const { value } = await Preferences.get({ key });
-    if (value !== null) return value;
-  }
+  const saved = w.__ORBIT_NATIVE__?.saved[key];
+  if (saved) return saved;
   try {
     return localStorage.getItem(key);
   } catch {
@@ -51,7 +62,7 @@ export async function loadValue(key: string): Promise<string | null> {
 }
 
 export function saveValue(key: string, value: string): void {
-  if (isNative) void Preferences.set({ key, value });
+  if (isNative) post({ type: 'save', key, value });
   try {
     localStorage.setItem(key, value);
   } catch {
@@ -60,5 +71,6 @@ export function saveValue(key: string, value: string): void {
 }
 
 export function openExternal(url: string): void {
-  window.open(url, '_blank', 'noopener');
+  if (isNative) post({ type: 'open', url });
+  else window.open(url, '_blank', 'noopener');
 }

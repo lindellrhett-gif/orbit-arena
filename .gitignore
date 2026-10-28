@@ -5,3 +5,4 @@ screens
 *.log
 .DS_Store
 .vite
+dist-native

@@ -15,6 +15,8 @@ for (const name of wanted) {
     browser = await pw[name].launch();
   } catch (err) {
     console.log(`${name}: not installed, skipped (${String(err.message).split('\n')[0]})`);
+    // In CI every browser must run, or the check proves nothing.
+    if (process.env.CI) failed = true;
     continue;
   }
   const page = await browser.newPage();
@@ -22,7 +24,10 @@ for (const name of wanted) {
   const res = await page.waitForFunction(() => window.__determinism, null, { timeout: 180_000 }).then((h) => h.jsonValue());
   const ok = res.mismatches.length === 0;
   failed ||= !ok;
-  console.log(`${name}: ${ok ? 'OK' : 'MISMATCH'} ${res.cases} cases in ${res.ms} ms  (${res.ua})`);
+  const line = `${name}: ${ok ? 'OK' : 'MISMATCH'} ${res.cases} cases in ${res.ms} ms  (${res.ua})`;
+  console.log(line);
+  // Shows up as an annotation on the workflow run.
+  if (process.env.GITHUB_ACTIONS) console.log(`::${ok ? 'notice' : 'error'} title=Determinism ${name}::${line}`);
   for (const m of res.mismatches.slice(0, 10)) console.log('   ', m);
   await browser.close();
 }

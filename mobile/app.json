@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Orbit Arena",
+    "slug": "orbit-arena",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#07080e",
+    "ios": {
+      "bundleIdentifier": "com.rhettlindell.orbitarena",
+      "appleTeamId": "V7YLBXSTX2",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "config": { "usesNonExemptEncryption": false },
+      "infoPlist": { "UIStatusBarStyle": "UIStatusBarStyleLightContent" }
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        { "image": "./assets/splash-icon.png", "imageWidth": 160, "backgroundColor": "#07080e" }
+      ],
+      [
+        "expo-audio",
+        { "microphonePermission": false, "recordAudioAndroid": false, "enableBackgroundPlayback": false }
+      ]
+    ]
+  }
+}

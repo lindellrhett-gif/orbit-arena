@@ -7,7 +7,7 @@ import {
   type Sim, type SimEvent,
 } from '../sim/sim';
 import { paddleEnds, ringEdgeAngles, type Ring } from '../sim/physics';
-import { flagImage } from './flags';
+import { flagSprite } from './flags';
 
 export const FONT = '"Saira Semi Condensed", "Bahnschrift", "Barlow", system-ui, sans-serif';
 const BG = '#07080e';
@@ -310,13 +310,13 @@ export class Renderer {
       if (b.gone) continue;
       const team = sim.teams[b.team];
       ctx.globalAlpha = b.live ? 1 : 0.4;
-      const img = team.flag ? flagImage(team.flag) : null;
-      if (img) {
+      const flag = team.flag ? flagSprite(team.flag) : null;
+      if (flag) {
         ctx.save();
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
         ctx.clip();
-        ctx.drawImage(img, b.x - b.r, b.y - b.r, b.r * 2, b.r * 2);
+        ctx.drawImage(flag.img, flag.sx, flag.sy, flag.size, flag.size, b.x - b.r, b.y - b.r, b.r * 2, b.r * 2);
         ctx.restore();
       } else {
         ctx.fillStyle = team.color;

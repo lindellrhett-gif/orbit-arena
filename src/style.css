@@ -125,7 +125,7 @@ a { color: var(--blue); }
 }
 .opt:active { transform: scale(0.97); }
 .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px #fff; flex: none; }
-.opt img { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; flex: none; }
+.opt .flag { width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; flex: none; }
 .link { display: block; margin: 8px auto 0; background: none; border: 0; color: var(--dim); text-decoration: underline; font-size: 15px; min-height: 36px; }
 
 .result { text-align: center; }

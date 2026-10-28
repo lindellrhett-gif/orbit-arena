@@ -9,7 +9,8 @@
 - Deterministic physics engine in TypeScript: the same spec and seed give the same run in every browser.
   Share links encode the sim, so anyone who opens one sees the exact same run.
 - Bounce notes from 9 public-domain melodies (Karplus-Strong pluck + bell partial + reverb), mute toggle.
-- iOS app (Capacitor 8): haptics, native share sheet, durable storage, portrait iPhone build.
+- iOS app (Expo SDK 57, built with EAS): the game bundled offline in a WebView, haptics, native share sheet,
+  durable storage, sound in silent mode, portrait iPhone build.
 - Web build: installable PWA with offline support, privacy page, desktop layout with a side panel.
 - Tests: determinism snapshots (6 configurations x 20 seeds) in Node and in Chromium/Firefox/WebKit, share-link
   round trips, daily seeds, trig accuracy, RNG.

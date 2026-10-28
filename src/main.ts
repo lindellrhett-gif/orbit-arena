@@ -1,5 +1,5 @@
-import '@fontsource/saira-semi-condensed/600.css';
-import '@fontsource/saira-semi-condensed/700.css';
+import '@fontsource/saira-semi-condensed/latin-600.css';
+import '@fontsource/saira-semi-condensed/latin-700.css';
 import './style.css';
 
 import { Synth } from './audio/synth';
@@ -8,7 +8,7 @@ import {
 } from './app/feed';
 import { isNative, openExternal, resultHaptic, shareLink, tapHaptic } from './app/platform';
 import { loadStore, recordPick, saveStore, store, winRate } from './app/store';
-import { flagUrl, preloadFlags } from './render/flags';
+import { flagCss, preloadFlags } from './render/flags';
 import { FONT, Renderer } from './render/renderer';
 import { FPS, H, RaceSim, type Sim, W, createSim } from './sim/sim';
 import { contestants, paramsToSpec, specToParams } from './sim/spec';
@@ -93,7 +93,7 @@ function load(next: FeedItem, watchOnly = false): void {
   el.result.hidden = true;
   el.tag.hidden = !next.tag;
   el.tag.textContent = next.tag;
-  if (next.spec.countries?.length) void preloadFlags(next.spec.countries).then(() => draw());
+  if (next.spec.countries?.length) void preloadFlags().then(() => draw());
   if (watchOnly) start();
   else showPick();
   draw();
@@ -111,10 +111,10 @@ function showPick(): void {
       b.className = 'opt';
       b.style.setProperty('--c', o.color);
       if (o.flag) {
-        const img = document.createElement('img');
-        img.src = flagUrl(o.flag);
-        img.alt = '';
-        b.append(img);
+        const flag = document.createElement('span');
+        flag.className = 'flag';
+        flag.style.cssText = flagCss(o.flag);
+        b.append(flag);
       } else if (item.spec.kind !== 'escape') {
         const dot = document.createElement('span');
         dot.className = 'dot';
@@ -320,8 +320,8 @@ function wire(): void {
   el.menuClose.addEventListener('click', () => setMenu(false));
   el.scrim.addEventListener('click', () => setMenu(false));
   if (isNative) {
-    // Open social links in the system browser rather than inside the app's web view.
-    el.drawer.querySelectorAll<HTMLAnchorElement>('.socials a').forEach((a) =>
+    // Open links (socials, privacy) in the system browser rather than inside the app's web view.
+    el.drawer.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((a) =>
       a.addEventListener('click', (ev) => { ev.preventDefault(); openExternal(a.href); }),
     );
   }

@@ -2,12 +2,15 @@
 
 Short notes on why things are the way they are. Newest last.
 
-## iOS first, built with Capacitor (2026-10-28)
-Rhett chose iOS first. The game is written once in TypeScript (Canvas 2D + Web Audio) and wrapped with Capacitor 8 for
-iOS. Reasons: the same code also serves the web build, which is what share links open on any phone (no install needed);
-it can be developed and tested headless on Linux, including the cross-browser determinism test against WebKit; and it
-avoids writing the physics twice (Swift for iOS, TypeScript for share links), which would make share links replay a
-*different* run. A native SwiftUI + SpriteKit rewrite stays possible later if the web view ever limits us.
+## iOS first, as an Expo app around the web game (2026-10-28)
+Rhett chose iOS first and builds on Windows with EAS (Expo's cloud Macs sign and submit with his Apple team). So the
+iOS app is an Expo SDK 57 app whose screen is a WebView running the same TypeScript game (Canvas 2D + Web Audio),
+bundled as one self-contained HTML file so it works offline. Native extras (haptics, share sheet, AsyncStorage,
+audio in silent mode) go over postMessage (`src/app/platform.ts` ↔ `mobile/App.tsx`).
+Why one game codebase rather than a native rewrite: share links open in a browser for people without the app, and they
+must replay the *same* run; two physics implementations (Swift and TypeScript) would drift apart. It also keeps the
+whole game testable headless, including the WebKit determinism test that stands in for iOS Safari.
+A first cut used Capacitor, which needs Xcode to build, so it was replaced the same day.
 
 ## Custom physics engine instead of Rapier (2026-10-28)
 The sims need circles, segments, rotating rings with a gap, spinning paddles and gravity, nothing more. A ~250-line
@@ -41,9 +44,10 @@ target window split into thirds.
 A correct pick earns 10 points per other option. Nothing is wagered, nothing is lost on a wrong pick, and points can't
 be bought or spent. This keeps the app clear of anything that looks like gambling (App Store 5.3, kids audiences).
 
-## Flags from flag-icons (2026-10-28)
+## Flags from flag-icons, in one sprite sheet (2026-10-28)
 flagcdn.com (used by the channel) isn't reachable from the build environment. flag-icons (MIT) has square flags for
-256 of the 306 codes in codes.json (all countries; not the US states). They're rasterized once to 128 px PNGs.
+256 of the 306 codes in codes.json (all countries; not the US states). They're packed into one 16x16 sheet of 96 px
+cells (190 KB WebP): one request on the web, and small enough to inline into the iOS app's single HTML file.
 
 ## Reduced motion doesn't slow the spin (2026-10-28)
 Slowing the rings would change the physics, and a share link must replay the same run for everyone. Reduced motion
@@ -56,3 +60,8 @@ universal links (needs an `apple-app-site-association` file on a domain we contr
 ## No analytics yet (2026-10-28)
 Phase 1 ships with no analytics at all. Adding privacy-friendly analytics (GoatCounter or Cloudflare Web Analytics)
 is Rhett's call and the privacy page has to change first.
+
+## Sound plays in silent mode in the iOS app (2026-10-28)
+The app sets the audio session to play with the silent switch on and to mix with other audio, because the bounce notes
+are the point of the format (TikTok and Shorts behave the same way). The mute button in the app still silences it.
+Microphone permission and background audio from the expo-audio plugin are turned off; the app doesn't use them.
