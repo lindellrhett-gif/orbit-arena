@@ -247,3 +247,47 @@ export function rotateVelocity(b: Ball, angle: number): void {
   b.vy = b.vx * s + b.vy * c;
   b.vx = vx;
 }
+
+/**
+ * Circle against an axis-aligned square block, reflecting the velocity (speed is kept). Returns whether they touched.
+ */
+export function collideBlock(b: Ball, cx: number, cy: number, half: number): boolean {
+  const qx = b.x < cx - half ? cx - half : b.x > cx + half ? cx + half : b.x;
+  const qy = b.y < cy - half ? cy - half : b.y > cy + half ? cy + half : b.y;
+  const dx = b.x - qx;
+  const dy = b.y - qy;
+  const d2 = dx * dx + dy * dy;
+  if (d2 >= b.r * b.r) return false;
+  let nx: number, ny: number, pen: number;
+  if (d2 > 1e-12) {
+    const d = Math.sqrt(d2);
+    nx = dx / d;
+    ny = dy / d;
+    pen = b.r - d;
+  } else {
+    // Center inside the block: push out along the shallower axis.
+    const ox = half - Math.abs(b.x - cx);
+    const oy = half - Math.abs(b.y - cy);
+    if (ox < oy) { nx = b.x >= cx ? 1 : -1; ny = 0; pen = ox + b.r; } else { nx = 0; ny = b.y >= cy ? 1 : -1; pen = oy + b.r; }
+  }
+  b.x += nx * pen;
+  b.y += ny * pen;
+  const vn = b.vx * nx + b.vy * ny;
+  if (vn < 0) {
+    b.vx -= 2 * vn * nx;
+    b.vy -= 2 * vn * ny;
+  }
+  return true;
+}
+
+/** Sets a ball's speed without changing its direction. */
+export function setSpeed(b: Ball, speed: number): void {
+  const v2 = b.vx * b.vx + b.vy * b.vy;
+  if (v2 < 1e-12) {
+    b.vy = -speed;
+    return;
+  }
+  const k = speed / Math.sqrt(v2);
+  b.vx *= k;
+  b.vy *= k;
+}

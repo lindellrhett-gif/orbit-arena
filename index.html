@@ -25,6 +25,7 @@
           <span class="chip" id="points" title="Points">★ 0</span>
           <span class="chip" id="streak" title="Streak">🔥 0</span>
         </div>
+        <button class="icon" id="build-btn" aria-label="Build your own sim" title="Build your own"></button>
         <button class="icon" id="sound" aria-label="Sound on"></button>
         <button class="icon" id="menu-btn" aria-label="Menu"></button>
       </header>
@@ -51,7 +52,34 @@
               <button class="btn ghost" id="share">Share</button>
               <button class="btn primary" id="next">Next ▶</button>
             </div>
+            <div class="actions-2">
+              <button class="mini" id="video">🎬 Save video</button>
+              <button class="mini" id="remix">✎ Remix</button>
+              <button class="mini" id="submit">📮 Submit</button>
+            </div>
           </section>
+
+          <section class="sheet" id="submit-sheet" hidden>
+            <h2>Submit to Orbit Arena</h2>
+            <p class="small">
+              The best viewer sims get posted on the channel with credit. Copy your sim and post it as a comment on any
+              Orbit Arena video, or send it in a DM. Nothing is sent from the app.
+            </p>
+            <label class="field">Credit me as (optional)
+              <input id="credit" maxlength="24" autocomplete="off" placeholder="your name or @handle" />
+            </label>
+            <pre class="yaml" id="yaml"></pre>
+            <div class="actions two">
+              <button class="btn ghost" id="copy-yaml">Copy spec</button>
+              <button class="btn primary" id="share-sim">Share link</button>
+            </div>
+            <button class="link" id="submit-close">Done</button>
+          </section>
+
+          <div class="rec" id="rec" hidden>
+            <span class="rec-dot"></span><span id="rec-time">REC 0.0 s</span>
+            <button class="mini" id="rec-cancel">Cancel</button>
+          </div>
         </div>
       </main>
 
@@ -59,6 +87,8 @@
         <button class="icon close" id="menu-close" aria-label="Close menu">✕</button>
         <h3>Your picks</h3>
         <div class="stats" id="stats"></div>
+        <h3>Daily challenge</h3>
+        <div id="daily"></div>
         <h3>Settings</h3>
         <label class="toggle"><input type="checkbox" id="opt-sound" /> Sound</label>
         <label class="toggle"><input type="checkbox" id="opt-motion" /> Reduced motion</label>
@@ -70,7 +100,7 @@
         </div>
         <h3>How it works</h3>
         <p class="small">
-          Pick who wins before each sim starts. Every sim runs live on your device, and a share link replays the exact
+          Pick who wins (or over/under) before each sim starts. Every sim runs live on your device, and a share link replays the exact
           same run for anyone who opens it. Points are just for fun: they can't be bought or spent.
         </p>
         <p class="small">
@@ -79,6 +109,7 @@
         </p>
         <p class="small dim" id="version"></p>
       </aside>
+      <section class="panel" id="builder" hidden aria-label="Build your own"></section>
       <div class="scrim" id="scrim" hidden></div>
       <div class="toast" id="toast" role="status" hidden></div>
     </div>

@@ -3,10 +3,12 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAudioModeAsync } from 'expo-audio';
+import { File, Paths } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
+import * as Sharing from 'expo-sharing';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Linking, Share, StyleSheet, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { WEB_APP_HTML } from './src/webApp';
@@ -22,10 +24,17 @@ type Message =
   | { type: 'haptic'; kind: 'light' | 'success' | 'warning' }
   | { type: 'share'; text: string; url: string }
   | { type: 'save'; key: string; value: string }
-  | { type: 'open'; url: string };
+  | { type: 'open'; url: string }
+  | { type: 'file-start'; id: string; name: string; mime: string }
+  | { type: 'file-chunk'; id: string; data: string }
+  | { type: 'file-end'; id: string };
+
+const UTI: Record<string, string> = { 'video/mp4': 'public.mpeg-4', 'image/png': 'public.png' };
 
 export default function App() {
   const [saved, setSaved] = useState<Record<string, string> | null>(null);
+  // Exported videos arrive from the page in base64 chunks, are written to the cache, then shared.
+  const incoming = useRef<{ id: string; file: File; mime: string } | null>(null);
 
   useEffect(() => {
     // Play bounce notes even with the silent switch on, mixed with any music the user is playing.
@@ -64,6 +73,25 @@ export default function App() {
       case 'open':
         if (/^https:\/\//.test(msg.url)) void Linking.openURL(msg.url);
         break;
+      case 'file-start': {
+        const safe = msg.name.replace(/[^A-Za-z0-9._-]/g, '_');
+        const file = new File(Paths.cache, safe);
+        if (file.exists) file.delete();
+        file.create();
+        incoming.current = { id: msg.id, file, mime: msg.mime };
+        break;
+      }
+      case 'file-chunk':
+        if (incoming.current?.id === msg.id) incoming.current.file.write(msg.data, { encoding: 'base64', append: true });
+        break;
+      case 'file-end': {
+        const done = incoming.current;
+        incoming.current = null;
+        if (done?.id === msg.id) {
+          void Sharing.shareAsync(done.file.uri, { mimeType: done.mime, UTI: UTI[done.mime] }).catch(() => {});
+        }
+        break;
+      }
     }
   };
 

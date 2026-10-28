@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.0 (Phase 2)
+
+- All seven kinds: escape, battle, grow, multiply, race, orbit (black hole survival) and blocks.
+- Over/under picks for kinds without contestants (escape, grow, multiply, blocks): the line sits just above or
+  below the real result, on a side set by the seed, so every guess is a fair, close 50/50.
+- Build your own: pick a kind, colors or countries (search all 256), rings, gap, spin, grow, ball count, ball size,
+  gravity or black-hole pull, and melody; it finds a run that fits the length window. 5 saved sims on the device.
+  Remix any sim from its result card.
+- Save video: replays the run onto a 720x1280 canvas with a "Made with Orbit Arena" watermark and records picture
+  and sound together (MP4 where the browser can, WebM otherwise). Where recording isn't available it saves a picture
+  of the result and shares the link. In the iOS app the file goes to the share sheet (Save Video, TikTok...).
+- Daily challenge: three sims a day for everyone (an escape, a pick-the-winner kind, a guess kind), today's score,
+  day streak, a 7-day strip and your best days.
+- Submit your sim: a credit name plus an orbit.py-style YAML spec and the share link, to post in a comment or DM.
+  Nothing is sent from the app. `scripts/link-to-yaml.ts` turns a link back into YAML for the channel.
+- Share links no longer carry a free-text title (the app never shows one person's typed text to another).
+
 ## 0.1.0 (Phase 1, unreleased)
 
 - Watch & Pick feed: three daily sims (same for everyone that day) and endless random ones. Pick a color, country,

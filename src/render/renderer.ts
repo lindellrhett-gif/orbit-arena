@@ -3,8 +3,8 @@
 // status line and the result pill. Drawing never feeds back into the physics.
 
 import {
-  BattleSim, CX, CY, EscapeSim, FINISH_Y, FLOOR_Y, H, R0, RACE_LEFT, RACE_RIGHT, RaceSim, W,
-  type Sim, type SimEvent,
+  BattleSim, BlocksSim, CX, CY, EscapeSim, FINISH_Y, FLOOR_Y, GrowSim, H, HOLE_R, MultiplySim, OrbitSim, R0, RACE_LEFT,
+  RACE_RIGHT, RaceSim, W, type Sim, type SimEvent,
 } from '../sim/sim';
 import { paddleEnds, ringEdgeAngles, type Ring } from '../sim/physics';
 import { flagSprite } from './flags';
@@ -59,7 +59,7 @@ export class Renderer {
 
   /** Records trail points and spawns particles for a frame's events. Call once per sim frame. */
   track(sim: Sim, events: SimEvent[]): void {
-    const len = this.reducedMotion ? 5 : sim.spec.kind === 'race' ? 8 : 14;
+    const len = this.reducedMotion ? Math.min(5, sim.trail) : sim.trail;
     for (const b of sim.balls) {
       if (b.gone) continue;
       let t = this.trails.get(b.id);
@@ -70,6 +70,8 @@ export class Renderer {
     for (const e of events) {
       if (e.type === 'shatter' && sim instanceof EscapeSim) this.shatter(sim.rings[e.ring], sim);
       else if (e.type === 'out') this.burst(e.x, e.y, sim.teams[e.team].color, 26);
+      else if (e.type === 'break') this.burst(e.x, e.y, e.color, 7);
+      else if (e.type === 'spawn') this.burst(e.x, e.y, '#ffffff', 5);
       else if (e.type === 'finish' && e.place === 1) {
         const b = sim.balls.find((x) => x.team === e.team);
         if (b) this.burst(b.x, FINISH_Y, '#ffffff', 40);
@@ -123,8 +125,16 @@ export class Renderer {
     this.drawTitle(view.title, sim.spec.kind === 'race');
 
     if (sim instanceof EscapeSim) this.drawEscape(sim, view.time);
-    else if (sim instanceof BattleSim) this.drawRing(sim.ring, 0, view.time);
     else if (sim instanceof RaceSim) this.drawTrack(sim, view.time);
+    else if (sim instanceof OrbitSim) {
+      this.drawRing(sim.ring, 2, view.time);
+      this.drawHole(sim.pull, view.time);
+    } else if (sim instanceof BattleSim || sim instanceof GrowSim || sim instanceof MultiplySim) {
+      this.drawRing(sim.ring, 0, view.time);
+    } else if (sim instanceof BlocksSim) {
+      this.drawRing(sim.ring, 0, view.time);
+      this.drawBlocks(sim);
+    }
 
     if (!view.hideContestants) this.drawBalls(sim);
     else if (sim instanceof RaceSim) this.drawStartGate();
@@ -224,6 +234,47 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
+  /** Black hole: a dark core with a hot, slowly turning accretion glow that swells as the pull grows. */
+  private drawHole(pull: number, time: number): void {
+    const ctx = this.ctx;
+    const r = HOLE_R * (0.9 + 0.1 * pull);
+    const glow = ctx.createRadialGradient(CX, CY, r * 0.6, CX, CY, r * 3.2);
+    glow.addColorStop(0, 'rgba(255,140,60,0.55)');
+    glow.addColorStop(0.35, 'rgba(255,79,216,0.22)');
+    glow.addColorStop(1, 'rgba(139,92,255,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(CX, CY, r * 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 5;
+    for (let i = 0; i < 3; i++) {
+      const a = time * (1.4 + i * 0.5) + i * 2;
+      ctx.strokeStyle = i === 1 ? 'rgba(255,79,216,0.8)' : 'rgba(255,170,80,0.85)';
+      ctx.beginPath();
+      ctx.arc(CX, CY, r * (1.12 + i * 0.12), a, a + Math.PI * 1.2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(CX, CY, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  private drawBlocks(sim: BlocksSim): void {
+    const ctx = this.ctx;
+    for (const k of sim.blocks) {
+      if (!k.alive) continue;
+      ctx.fillStyle = k.color;
+      ctx.fillRect(k.x - k.half, k.y - k.half, k.half * 2, k.half * 2);
+    }
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#ffffff';
+    for (const k of sim.blocks) {
+      if (k.alive) ctx.fillRect(k.x - k.half, k.y - k.half, k.half * 2, 4);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   private drawTrack(sim: RaceSim, time: number): void {
     const ctx = this.ctx;
     ctx.lineCap = 'round';
@@ -284,13 +335,14 @@ export class Renderer {
 
   private drawBalls(sim: Sim): void {
     const ctx = this.ctx;
-    const escape = sim instanceof EscapeSim;
+    const solo = sim instanceof EscapeSim || sim instanceof GrowSim;
+    const crowd = sim.balls.length > 40;
     // Trails first so every ball sits on top of every trail.
     for (const b of sim.balls) {
       if (b.gone) continue;
       const t = this.trails.get(b.id);
       if (!t) continue;
-      const color = escape ? '#ffffff' : sim.teams[b.team].color;
+      const color = sim.ballColor(b);
       const n = t.length / 2;
       ctx.fillStyle = color;
       for (let i = 0; i < n - 1; i++) {
@@ -302,9 +354,10 @@ export class Renderer {
       }
     }
     ctx.globalAlpha = 1;
-    if (escape) {
+    if (solo) {
       const b = sim.balls[0];
-      ctx.drawImage(this.glowSprite(), b.x - b.r * 2.6, b.y - b.r * 2.6, b.r * 5.2, b.r * 5.2);
+      const k = Math.min(2.6, 1.3 + 30 / b.r);
+      ctx.drawImage(this.glowSprite(), b.x - b.r * k, b.y - b.r * k, b.r * 2 * k, b.r * 2 * k);
     }
     for (const b of sim.balls) {
       if (b.gone) continue;
@@ -319,17 +372,17 @@ export class Renderer {
         ctx.drawImage(flag.img, flag.sx, flag.sy, flag.size, flag.size, b.x - b.r, b.y - b.r, b.r * 2, b.r * 2);
         ctx.restore();
       } else {
-        ctx.fillStyle = team.color;
+        ctx.fillStyle = sim.ballColor(b);
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = Math.max(2.5, b.r * 0.13);
+      ctx.lineWidth = crowd ? 2 : Math.min(8, Math.max(2.5, b.r * 0.13));
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
       ctx.stroke();
-      if (!escape && b.live) {
+      if (sim.labels && b.live) {
         const size = sim.spec.kind === 'race' ? 22 : 26;
         this.label(team.name, b.x, b.y + b.r + size + 2, size, team.flag ? '#ffffff' : team.color);
       }

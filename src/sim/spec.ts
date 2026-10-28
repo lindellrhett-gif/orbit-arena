@@ -3,8 +3,12 @@
 
 import countryNames from '../data/countries.json';
 
-export type Kind = 'escape' | 'battle' | 'race';
-export const KINDS: Kind[] = ['escape', 'battle', 'race'];
+export type Kind = 'escape' | 'battle' | 'grow' | 'multiply' | 'race' | 'orbit' | 'blocks';
+export const KINDS: Kind[] = ['escape', 'battle', 'grow', 'multiply', 'race', 'orbit', 'blocks'];
+
+/** Kinds where viewers pick a contestant; the others are guessed by time. */
+export const CONTEST_KINDS: Kind[] = ['battle', 'race', 'orbit'];
+export const isContest = (kind: Kind): boolean => CONTEST_KINDS.includes(kind);
 
 export const MELODY_IDS = [
   'fur_elise', 'ode_to_joy', 'mountain_king', 'twinkle', 'canon', 'nachtmusik', 'turkish_march', 'greensleeves',
@@ -22,9 +26,15 @@ export type Spec = {
   gap_deg?: number;
   /** Ring spin in degrees per second. */
   spin?: number;
-  /** escape: pixels the ball grows per bounce (0 = off). */
+  /** escape / grow: pixels the ball grows per bounce (0 = off for escape). */
   grow?: number;
-  /** battle / race contestants: color names, or ISO country codes. */
+  /** multiply: stop at this many balls. */
+  cap?: number;
+  /** Gravity multiplier (1 = normal). */
+  gravity?: number;
+  /** Ball size multiplier (1 = normal). */
+  size?: number;
+  /** battle / race / orbit contestants: color names, or ISO country codes. */
   colors?: string[];
   countries?: string[];
   /** Seed search window in seconds. */
@@ -59,7 +69,7 @@ export const POPULAR_COUNTRIES = [
 export type Contestant = { key: string; name: string; color: string; flag?: string };
 
 export function contestants(spec: Spec): Contestant[] {
-  if (spec.kind === 'escape') return [{ key: 'ball', name: 'BALL', color: '#ffffff' }];
+  if (!isContest(spec.kind)) return [{ key: 'ball', name: 'BALL', color: '#ffffff' }];
   if (spec.countries?.length) {
     return spec.countries.map((code, i) => ({
       key: code,
@@ -82,10 +92,15 @@ export function shortCountryName(code: string): string {
   return SHORT_NAMES[code] ?? COUNTRIES[code] ?? code.toUpperCase();
 }
 
+/** Run-length windows for the seed search (the channel playbook's target lengths). */
 export const TARGET_SECONDS: Record<Kind, [number, number]> = {
   escape: [15, 40],
   battle: [20, 60],
+  grow: [15, 35],
+  multiply: [20, 40],
   race: [25, 45],
+  orbit: [20, 50],
+  blocks: [20, 50],
 };
 
 export function withDefaults(spec: Spec): Required<Omit<Spec, 'title' | 'colors' | 'countries'>> & Spec {
@@ -93,7 +108,10 @@ export function withDefaults(spec: Spec): Required<Omit<Spec, 'title' | 'colors'
     rings: 1,
     gap_deg: spec.kind === 'battle' ? 28 : (spec.rings ?? 1) > 1 ? 30 : spec.grow ? 24 : 18,
     spin: spec.kind === 'battle' ? 40 : 60,
-    grow: 0,
+    grow: spec.kind === 'grow' ? 2.2 : 0,
+    cap: 100,
+    gravity: 1,
+    size: 1,
     target_seconds: TARGET_SECONDS[spec.kind],
   };
   return { ...base, ...stripUndefined(spec) } as Required<Omit<Spec, 'title' | 'colors' | 'countries'>> & Spec;
@@ -118,6 +136,14 @@ export function defaultTitle(spec: Spec): string {
       return spec.countries?.length ? 'Which country wins?' : `${n} colors. 1 winner.`;
     case 'race':
       return spec.countries?.length ? 'Country marble race!' : 'Marble race: who wins?';
+    case 'grow':
+      return 'It grows every bounce.\nHow long to fill it?';
+    case 'multiply':
+      return 'Every bounce adds a ball';
+    case 'orbit':
+      return spec.countries?.length ? 'Which country survives\nthe black hole?' : 'Who survives\nthe black hole?';
+    case 'blocks':
+      return 'Can it break every block?';
   }
 }
 
@@ -132,15 +158,16 @@ export function specToParams(spec: Spec): URLSearchParams {
   p.set('k', spec.kind);
   p.set('s', String(spec.seed));
   p.set('m', spec.melody);
-  if (spec.kind === 'escape') {
-    if (spec.rings !== undefined) p.set('rings', String(spec.rings));
-    if (spec.grow) p.set('grow', String(spec.grow));
-  }
+  if (spec.kind === 'escape' && spec.rings !== undefined) p.set('rings', String(spec.rings));
+  if (spec.grow) p.set('grow', String(spec.grow));
+  if (spec.kind === 'multiply' && spec.cap !== undefined) p.set('cap', String(spec.cap));
   if (spec.gap_deg !== undefined) p.set('gap', String(spec.gap_deg));
   if (spec.spin !== undefined) p.set('spin', String(spec.spin));
+  if (spec.gravity !== undefined && spec.gravity !== 1) p.set('g', String(spec.gravity));
+  if (spec.size !== undefined && spec.size !== 1) p.set('size', String(spec.size));
   if (spec.countries?.length) p.set('countries', spec.countries.join(','));
   else if (spec.colors?.length) p.set('colors', spec.colors.join(','));
-  if (spec.title) p.set('t', spec.title);
+  // No free-text title in links: the app never shows text typed by one person to another.
   return p;
 }
 
@@ -162,19 +189,23 @@ export function paramsToSpec(p: URLSearchParams): Spec | null {
   const rings = num(p.get('rings'), 1, 8);
   if (kind === 'escape' && rings !== undefined) spec.rings = Math.floor(rings);
   const grow = num(p.get('grow'), 0, 6);
-  if (kind === 'escape' && grow) spec.grow = grow;
+  if ((kind === 'escape' || kind === 'grow') && grow) spec.grow = grow;
+  const cap = num(p.get('cap'), 10, 250);
+  if (kind === 'multiply' && cap !== undefined) spec.cap = Math.floor(cap);
   const gap = num(p.get('gap'), 10, 120);
   if (gap !== undefined) spec.gap_deg = gap;
   const spin = num(p.get('spin'), -360, 360);
   if (spin !== undefined) spec.spin = spin;
-  if (kind !== 'escape') {
+  const gravity = num(p.get('g'), 0, 2.5);
+  if (gravity !== undefined) spec.gravity = gravity;
+  const size = num(p.get('size'), 0.5, 1.8);
+  if (size !== undefined) spec.size = size;
+  if (isContest(kind)) {
     const countries = (p.get('countries') ?? '').split(',').filter((c) => c in COUNTRIES).slice(0, 12);
     const colors = (p.get('colors') ?? '').split(',').filter((c) => c in COLORS).slice(0, 10);
     if (countries.length >= 2) spec.countries = countries;
     else if (colors.length >= 2) spec.colors = colors;
     else spec.colors = ['red', 'blue', 'green', 'yellow'];
   }
-  const title = p.get('t');
-  if (title) spec.title = title.slice(0, 60);
   return spec;
 }

@@ -11,6 +11,11 @@ const kinds: Omit<Spec, 'seed'>[] = [
   { kind: 'battle', melody: 'ode_to_joy', colors: ['red', 'blue', 'green', 'yellow', 'orange', 'purple'] },
   { kind: 'battle', melody: 'nachtmusik', countries: ['us', 'br', 'jp', 'de', 'in', 'mx'] },
   { kind: 'race', melody: 'greensleeves', colors: ['red', 'blue', 'green', 'yellow', 'orange', 'purple'] },
+  { kind: 'grow', melody: 'canon' },
+  { kind: 'multiply', melody: 'twinkle', cap: 60 },
+  { kind: 'orbit', melody: 'mountain_king', countries: ['us', 'br', 'jp', 'de', 'in', 'mx'] },
+  { kind: 'blocks', melody: 'turkish_march' },
+  { kind: 'battle', melody: 'canon', colors: ['red', 'blue', 'green', 'yellow'], gravity: 0.6, size: 1.4, spin: -90 },
 ];
 
 export const DETERMINISM_CASES: Case[] = kinds.flatMap((k, ki) =>

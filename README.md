@@ -1,7 +1,7 @@
 # Orbit Arena
 
-Satisfying physics sims you can play: pick a color, a country, a marble or an escape time, watch the run, and
-share it. Every bounce plays the next note of a public-domain melody. Companion app to the Orbit Arena channels
+Satisfying physics sims you can play: pick a color, a country or a marble (or guess over/under), watch the run,
+build your own, save it as a video and share it. Every bounce plays the next note of a public-domain melody. Companion app to the Orbit Arena channels
 ([YouTube](https://www.youtube.com/@orbit_arena) · [TikTok](https://www.tiktok.com/@orbit_arena) ·
 [Instagram](https://www.instagram.com/orbitarena_/)).
 
@@ -31,6 +31,7 @@ Other scripts:
 | `npx vite-node scripts/survey.ts battle 30` | Run lengths per kind, for tuning |
 | `npm run flags` | Re-packs the flag sprite sheet from flag-icons |
 | `npm run build:native` | Builds the single-file game for the iOS app into `mobile/src/webApp.ts` |
+| `npx vite-node scripts/link-to-yaml.ts "<link>" [credit]` | Turns a viewer's share link into an orbit.py-style spec (for the channel) |
 
 ## iOS (Expo + EAS)
 
@@ -72,12 +73,13 @@ bundle ID). `--profile development` builds a dev client for your iPhone; `--prof
 
 ## How it works
 
-- `src/sim/`: the deterministic engine. `physics.ts` (contacts), `sim.ts` (escape, battle, race), `dmath.ts`
-  (bit-exact trig), `rng.ts` (seeded sfc32), `seeds.ts` (seed search), `spec.ts` (spec format and share links).
-  A run is fully determined by its spec and seed.
+- `src/sim/`: the deterministic engine. `physics.ts` (contacts), `base.ts` (the Sim class), `kinds/*.ts` (escape,
+  battle, grow, multiply, race, orbit, blocks), `dmath.ts` (bit-exact trig), `rng.ts` (seeded sfc32), `seeds.ts`
+  (seed search), `spec.ts` (spec format and share links). A run is fully determined by its spec and seed.
 - `src/render/`: Canvas 2D drawing in the channel's look (1080x1920 logical canvas).
 - `src/audio/`: Web Audio synth and the public-domain melodies.
-- `src/app/`: feed (daily + random sims, picks), on-device store, the bridge to the iOS app.
+- `src/app/`: feed (daily + random sims, picks), builder (sandbox), export (video), submit (YAML), on-device store,
+  the bridge to the iOS app.
 - `mobile/`: the Expo iOS app (`App.tsx` is the native side of the bridge).
 - `docs/DECISIONS.md`: why things are built this way.
 

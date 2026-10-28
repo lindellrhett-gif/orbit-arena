@@ -32,6 +32,7 @@ export class Synth {
       comp.threshold.value = -14;
       comp.ratio.value = 4;
       comp.connect(ctx.destination);
+      this.out = comp;
       const master = ctx.createGain();
       master.gain.value = this.muted ? 0 : 0.8;
       master.connect(comp);
@@ -58,6 +59,18 @@ export class Synth {
   }
 
   private masterGain: GainNode | null = null;
+  private out: AudioNode | null = null;
+  private recordDest: MediaStreamAudioDestinationNode | null = null;
+
+  /** A stream of everything the synth plays, for recording a video. Null before unlock(). */
+  recordStream(): MediaStream | null {
+    if (!this.ctx || !this.out) return null;
+    if (!this.recordDest) {
+      this.recordDest = this.ctx.createMediaStreamDestination();
+      this.out.connect(this.recordDest);
+    }
+    return this.recordDest.stream;
+  }
 
   setMuted(m: boolean): void {
     this.muted = m;

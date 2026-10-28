@@ -5,7 +5,10 @@ type NativeMessage =
   | { type: 'haptic'; kind: 'light' | 'success' | 'warning' }
   | { type: 'share'; text: string; url: string }
   | { type: 'save'; key: string; value: string }
-  | { type: 'open'; url: string };
+  | { type: 'open'; url: string }
+  | { type: 'file-start'; id: string; name: string; mime: string }
+  | { type: 'file-chunk'; id: string; data: string }
+  | { type: 'file-end'; id: string };
 
 type NativeWindow = Window & {
   ReactNativeWebView?: { postMessage(data: string): void };
@@ -13,7 +16,7 @@ type NativeWindow = Window & {
   __ORBIT_NATIVE__?: { saved: Record<string, string> };
 };
 
-const w = window as NativeWindow;
+const w = (typeof window === 'undefined' ? {} : window) as NativeWindow;
 export const isNative = Boolean(w.__ORBIT_NATIVE__);
 
 function post(msg: NativeMessage): void {
@@ -73,4 +76,24 @@ export function saveValue(key: string, value: string): void {
 export function openExternal(url: string): void {
   if (isNative) post({ type: 'open', url });
   else window.open(url, '_blank', 'noopener');
+}
+
+/** Bytes per message; a multiple of 3 so the base64 pieces join into one valid string. */
+const FILE_CHUNK = 3 * 170_000;
+
+function toBase64(bytes: Uint8Array): string {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+/** Sends a file (a recorded video or a picture) to the iOS app, which saves it and opens the share sheet. */
+export async function sendFile(blob: Blob, name: string): Promise<void> {
+  const id = `${Date.now()}`;
+  post({ type: 'file-start', id, name, mime: blob.type });
+  for (let off = 0; off < blob.size; off += FILE_CHUNK) {
+    const buf = new Uint8Array(await blob.slice(off, off + FILE_CHUNK).arrayBuffer());
+    post({ type: 'file-chunk', id, data: toBase64(buf) });
+  }
+  post({ type: 'file-end', id });
 }

@@ -36,9 +36,12 @@ Seed search is orbit.py's `pick_seed`: dry-run seeds until the run ends inside t
 `npm run daily` into `src/data/daily.json` so phones never search. Random feed sims search on the device (a dry run
 is 1-35 ms). A test checks that stored daily seeds still give good runs, so a physics change can't silently break them.
 
-## Escape picks are time buckets (2026-10-28)
-Every escape ends with ESCAPED!, so "will it escape?" isn't a real pick. Viewers guess the escape time instead: the
-target window split into thirds.
+## Over/under picks for kinds without contestants (2026-10-28, replaced time buckets)
+Escape, grow, multiply and blocks have no contestant to pick. Phase 1 used escape-time buckets (the target window in
+thirds), but some kinds barely vary (multiply: 23-28 s for 100 balls), so buckets were lopsided. Now the viewer
+guesses over or under a line placed 4-14% above or below the real result, on a side set by the seed
+(`makeRng(seed, 2)`). Every guess is a fair 50/50 and always a close call, it works for any kind and any sandbox
+settings, and shared links show the same line to everyone. Grow guesses bounces; the others guess seconds.
 
 ## Points are a score, not a currency (2026-10-28)
 A correct pick earns 10 points per other option. Nothing is wagered, nothing is lost on a wrong pick, and points can't
@@ -65,3 +68,38 @@ is Rhett's call and the privacy page has to change first.
 The app sets the audio session to play with the silent switch on and to mix with other audio, because the bounce notes
 are the point of the format (TikTok and Shorts behave the same way). The mute button in the app still silences it.
 Microphone permission and background audio from the expo-audio plugin are turned off; the app doesn't use them.
+
+## New kinds: tuning notes (2026-10-28)
+- **grow:** with a fixed growth step the bounce count is the same for every seed (about 150), so there'd be nothing to
+  guess. Each run's ball grows at its own rate (0.7-1.35x the setting, from the seed), and harder hits grow it more.
+  The ball is fast (2200 px/s at the center) so a fill takes 15-35 s like the channel's.
+- **multiply:** the first ball is 25x heavier with its own energy so the crowd can't smother it, and its bounces off
+  other balls count too (at most one new ball per 0.1 s). 100 balls take about 25 s, 200 about 42 s.
+- **orbit:** pull G/d² that grows 1.5% per second, 2% drag per second, and a closed outer ring so nobody leaves the
+  screen. Touching the hole (its radius plus half your own) knocks you out.
+- **blocks:** about 193 square blocks in a disc; the ball keeps a constant speed (no gravity) and splits every 15 hits,
+  up to 6 balls.
+
+## Video export (2026-10-28)
+`canvas.captureStream(60)` plus the synth's `MediaStreamAudioDestinationNode`, recorded with MediaRecorder while the
+run replays in real time onto a separate 720x1280 canvas (with the watermark). Format preference: H.264 MP4 (Chrome,
+Safari, iOS 14.5+), any MP4, then WebM (Firefox). Headless Chromium here records MP4 with VP9; branded Chrome and
+Safari produce H.264, which TikTok, Shorts and Reels all take. If MediaRecorder or captureStream is missing, the app
+saves a PNG of the result and shares the link instead. In the iOS app the file is passed to the native side in
+510 KB base64 chunks, written to the cache with expo-file-system, and opened in the share sheet with expo-sharing.
+Free exports are 720p with the watermark; HD without it is a Phase 3 purchase.
+
+## Submissions without a server (2026-10-28)
+"Submit your sim" collects nothing. It shows an orbit.py-style YAML spec (no seed: the app's physics differs from
+orbit.py, so the renderer picks its own with `--dry` as the playbook does) plus a cleaned credit name (letters,
+numbers, space, `_ . @ -`, 24 characters), and the viewer copies it or shares the link into a comment or DM. The
+channel already reads YouTube comments each run; `scripts/link-to-yaml.ts` turns a link into a spec. A real
+submission inbox would mean storing user text, which is Rhett's call (kids audience, moderation).
+
+## No free text in share links (2026-10-28)
+Phase 1 links could carry a title (`t=`), which would let anyone put any words on screen for whoever opens the link.
+Removed: titles always come from the spec, so the app never shows one person's typed text to another.
+
+## Gravity and size multipliers (2026-10-28)
+The sandbox's gravity and ball size are multipliers applied as `base * multiplier`. With the default of exactly 1
+the results are bit-identical to before, so no existing link or daily seed changed.
