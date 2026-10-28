@@ -1,0 +1,7 @@
+node_modules
+dist
+build
+screens
+*.log
+.DS_Store
+.vite

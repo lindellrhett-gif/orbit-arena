@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#07080e" />
+    <meta name="description" content="Satisfying physics sims you can play. Pick a color, watch it bounce, share the result." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta property="og:title" content="Orbit Arena" />
+    <meta property="og:description" content="Can you guess the winner? Satisfying physics sims, every bounce plays a note." />
+    <meta property="og:image" content="icons/og.png" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <title>Orbit Arena</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">
+          <img src="icons/icon-192.png" alt="" width="32" height="32" />
+          <span>ORBIT ARENA</span>
+        </div>
+        <div class="score" aria-live="polite">
+          <span class="chip" id="points" title="Points">★ 0</span>
+          <span class="chip" id="streak" title="Streak">🔥 0</span>
+        </div>
+        <button class="icon" id="sound" aria-label="Sound on"></button>
+        <button class="icon" id="menu-btn" aria-label="Menu"></button>
+      </header>
+
+      <main class="stage" id="stage">
+        <div class="frame-bar" id="frame-bar">
+          <div class="tag" id="tag" hidden></div>
+          <button class="skip" id="skip" hidden>Skip ⏭</button>
+        </div>
+        <div class="frame" id="frame">
+          <canvas id="canvas" aria-label="Physics simulation"></canvas>
+
+          <section class="sheet" id="pick" hidden>
+            <h2 id="pick-title">Pick a color</h2>
+            <div class="options" id="options"></div>
+            <button class="link" id="watch">Just watch</button>
+          </section>
+
+          <section class="sheet result" id="result" hidden>
+            <p class="big" id="result-big"></p>
+            <p class="sub" id="result-sub"></p>
+            <div class="actions">
+              <button class="btn ghost" id="replay">↺ Replay</button>
+              <button class="btn ghost" id="share">Share</button>
+              <button class="btn primary" id="next">Next ▶</button>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <aside class="drawer" id="drawer" aria-label="Menu">
+        <button class="icon close" id="menu-close" aria-label="Close menu">✕</button>
+        <h3>Your picks</h3>
+        <div class="stats" id="stats"></div>
+        <h3>Settings</h3>
+        <label class="toggle"><input type="checkbox" id="opt-sound" /> Sound</label>
+        <label class="toggle"><input type="checkbox" id="opt-motion" /> Reduced motion</label>
+        <h3>Follow Orbit Arena</h3>
+        <div class="socials">
+          <a href="https://www.youtube.com/@orbit_arena" target="_blank" rel="noopener">YouTube</a>
+          <a href="https://www.tiktok.com/@orbit_arena" target="_blank" rel="noopener">TikTok</a>
+          <a href="https://www.instagram.com/orbitarena_/" target="_blank" rel="noopener">Instagram</a>
+        </div>
+        <h3>How it works</h3>
+        <p class="small">
+          Pick who wins before each sim starts. Every sim runs live on your device, and a share link replays the exact
+          same run for anyone who opens it. Points are just for fun: they can't be bought or spent.
+        </p>
+        <p class="small">
+          Every bounce plays the next note of a public-domain melody. Flags from flag-icons (MIT).
+          <a href="privacy.html">Privacy</a>
+        </p>
+        <p class="small dim" id="version"></p>
+      </aside>
+      <div class="scrim" id="scrim" hidden></div>
+      <div class="toast" id="toast" role="status" hidden></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

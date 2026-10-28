@@ -1,0 +1,43 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      # Same (spec, seed) must give the same run in Chrome, Firefox and Safari's engine.
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:browsers
+
+  ios:
+    # Proves the iOS app compiles; signing and App Store upload happen in Xcode on Rhett's account.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync ios
+      - name: Build for the iOS simulator (unsigned)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -n 40
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OrbitArena-simulator-app
+          path: build/Build/Products/Debug-iphonesimulator/App.app
