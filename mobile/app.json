@@ -37,6 +37,12 @@
         }
       ],
       "expo-sharing"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4f03c308-003a-445e-a0f9-f17c970a4bd1"
+      }
+    },
+    "owner": "rhettl08"
   }
 }
