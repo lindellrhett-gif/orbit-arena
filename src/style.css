@@ -34,7 +34,8 @@ a { color: var(--blue); }
   height: 100%;
   display: grid;
   grid-template-rows: auto 1fr;
-  grid-template-columns: 1fr;
+  /* minmax(0, ...) so a wide top bar can't stretch the column past the screen and push the arena right */
+  grid-template-columns: minmax(0, 1fr);
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
@@ -46,9 +47,10 @@ a { color: var(--blue); }
   min-height: 52px;
 }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: 0.12em; font-size: 15px; white-space: nowrap; }
-@media (max-width: 400px) { .brand span { display: none; } }
+/* The name needs ~130 px; phones (up to 440 px wide) show only the logo so the buttons always fit. */
+@media (max-width: 500px) { .brand span { display: none; } }
 .brand img { border-radius: 50%; }
-.score { margin-left: auto; display: flex; gap: 6px; }
+.score { margin-left: auto; display: flex; gap: 6px; min-width: 0; overflow: hidden; }
 .chip {
   background: var(--panel-2);
   border: 1px solid var(--line);

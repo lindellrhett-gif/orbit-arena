@@ -8,6 +8,9 @@
 - Submit your sim writes specs the way the channel's `sim.yaml` files look and in orbit.py's units: spin in radians
   per second, gravity in px/s² (black-hole pull for orbit), ball size as `ball_r`, titles keep their line break, and
   `out: video.mp4`. Race and blocks list the channel's course settings. Knobs orbit.py can't express are left out.
+- Phones 401-440 px wide (iPhone 16 Pro, 17, Plus and Pro Max) no longer push the arena right and the menu button
+  off screen: the top bar shows only the logo below 500 px and can't widen the page.
+- The iOS splash logo no longer sits in a white box: it's the app icon's logo on a transparent background.
 
 ## 0.2.0 (Phase 2)
 
