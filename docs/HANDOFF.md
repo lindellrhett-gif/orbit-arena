@@ -43,7 +43,11 @@ Read this first, then `README.md` and `docs/DECISIONS.md`.
 1. **Check the EAS build.** If it failed, read the build log (Rhett can paste the link). Likely suspects in a first
    build: `npm ci` in `mobile/` (lockfile made on Linux with npm 10), or the `overrides` pin of `expo-asset`
    (`~57.0.20`; without it expo-audio pulls SDK 58's expo-asset and Metro fails).
-2. **Submit:** `npx eas-cli@latest submit --platform ios --latest` from `mobile/`.
+2. **Submit:** `npx eas-cli@latest submit --platform ios --latest --non-interactive` from `mobile/`. `ascAppId`
+   6828600863 is in `mobile/eas.json` (without it EAS asks for an Apple login), and EAS uses the API key stored on
+   its servers. Don't set the `EXPO_ASC_*` variables: on 2026-10-30 that local key got a 401 from Apple.
+   - Build 0.2.0 (1) was already uploaded before 2026-10-30; resubmitting it fails with "build number already
+     used". The next production build gets build 2 automatically.
 3. **Rhett tests on iPhone via TestFlight**, against the list in the cloud session's last instructions:
    - Sound after the first tap, including with the silent switch on.
    - Haptics.
@@ -54,11 +58,10 @@ Read this first, then `README.md` and `docs/DECISIONS.md`.
    - Data surviving a restart.
    - Airplane mode.
 4. **Read `scripts/orbit.py`** (now reachable locally) and align:
-   - `src/app/submit.ts` YAML keys with orbit.py's real spec format. The cloud session guessed them; there's no seed
-     on purpose.
-   - Melody note lists in `src/audio/melodies.ts`. They were transcribed by ear, so swap in orbit.py's `MELODIES`
-     if they differ.
-   - Colors, and anything else in the look that's off.
+   - Done 2026-10-30: `src/app/submit.ts` YAML (orbit.py's keys and units, checked with `--dry`) and the melody
+     note lists in `src/audio/melodies.ts` (now orbit.py's `MELODIES`). See `docs/DECISIONS.md`.
+   - Still open: colors, and anything else in the look that's off. Also the sound around the melody: orbit.py's
+     end chord is built on the current note, and an elimination replays the current note instead of a low thud.
    - Optionally render a reference frame per kind (`.venv\Scripts\python scripts\orbit.py <spec.yaml> --preview`)
      and compare side by side.
 5. **Phase 1/2 report items still open:** the bio links (Rhett: Instagram and YouTube now; TikTok only after

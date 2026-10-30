@@ -54,7 +54,21 @@ describe('submit', () => {
     expect(yaml).toContain('gap_deg: 30');
     expect(yaml).toContain('target_seconds: [20, 60]');
     expect(yaml).toContain('credit: "Ana"');
+    expect(yaml).toContain('out: video.mp4');
     expect(yaml).not.toMatch(/^seed:/m);
+  });
+  it("converts the app's knobs to orbit.py's units", () => {
+    const battle: Spec = { kind: 'battle', seed: 1, melody: 'canon', colors: ['red', 'blue'], spin: 40, gravity: 1.5, size: 1.2 };
+    const yaml = specToYaml(battle, '', 'https://example.com/');
+    expect(yaml).toContain('spin: 0.7\n');
+    expect(yaml).toContain('gravity: 2250\n');
+    expect(yaml).toContain('ball_r: 41\n');
+    expect(yaml).not.toMatch(/^size:/m);
+    const orbit = specToYaml({ kind: 'orbit', seed: 1, melody: 'canon', colors: ['red', 'blue'], gravity: 1.5 }, '', 'x');
+    expect(orbit).toContain('pull: 39000000\n');
+    expect(orbit).toContain('title: "Who survives\\nthe black hole?"');
+    const grow = specToYaml({ kind: 'grow', seed: 1, melody: 'canon', spin: 90, size: 1.4 }, '', 'x');
+    expect(grow).not.toMatch(/^(spin|ball_r):/m);
   });
 });
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Melodies now use the channel renderer's note lists (`MELODIES` in `scripts/orbit.py`), so a sim plays the same
+  tune in the app and on the channel. Mountain King is back in B minor and Eine kleine Nachtmusik in G, and each tune
+  loops after the phrase the channel uses.
+- Submit your sim writes specs the way the channel's `sim.yaml` files look and in orbit.py's units: spin in radians
+  per second, gravity in px/s² (black-hole pull for orbit), ball size as `ball_r`, titles keep their line break, and
+  `out: video.mp4`. Race and blocks list the channel's course settings. Knobs orbit.py can't express are left out.
+
 ## 0.2.0 (Phase 2)
 
 - All seven kinds: escape, battle, grow, multiply, race, orbit (black hole survival) and blocks.

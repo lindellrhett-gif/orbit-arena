@@ -67,9 +67,11 @@ npx eas-cli@latest build --platform ios --profile production
 npx eas-cli@latest submit --platform ios --latest
 ```
 
-For submit, copy the `submit.production.ios` block (App Store Connect API key path, key ID, issuer ID) from your other
-apps' `eas.json` into `mobile/eas.json`, and create the app in App Store Connect first (My Apps → + → New App, pick the
-bundle ID). `--profile development` builds a dev client for your iPhone; `--profile preview` an internal build.
+`mobile/eas.json` holds the app's App Store Connect ID (`ascAppId`), and EAS keeps the App Store Connect API key on its
+servers, so submit needs no Apple login and no key on this machine. Add `--non-interactive` so it never prompts for
+one (it then skips the TestFlight group check; the group already exists). Each upload needs a new build number, which
+`autoIncrement` handles on every production build. `--profile development` builds a dev client for your iPhone;
+`--profile preview` an internal build.
 
 ## How it works
 

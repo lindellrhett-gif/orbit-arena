@@ -103,3 +103,12 @@ Removed: titles always come from the spec, so the app never shows one person's t
 ## Gravity and size multipliers (2026-10-28)
 The sandbox's gravity and ball size are multipliers applied as `base * multiplier`. With the default of exactly 1
 the results are bit-identical to before, so no existing link or daily seed changed.
+
+## Melodies and submitted specs follow orbit.py (2026-10-30)
+Once `scripts/orbit.py` could be read locally, the melodies were replaced with its `MELODIES` lists. The earlier
+ones were transcribed by ear, and some were in other keys or longer. The channel and the app should play the same
+tune. The submit YAML was rebuilt from orbit.py's code and the channel's real `sim.yaml` files. The app stores spin
+in degrees per second and gravity and size as multipliers. orbit.py reads spin in radians per second, `gravity` in
+px/s² (1500, race 900), `pull` for the black hole (2.6e7) and `ball_r` per kind, so `specToYaml` converts. `pull`
+is written as an integer because PyYAML reads `2.6e7` as a string. Every generated spec was checked with
+`orbit.py --dry`.
