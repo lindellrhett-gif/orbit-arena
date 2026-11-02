@@ -8,12 +8,22 @@ type NativeMessage =
   | { type: 'open'; url: string }
   | { type: 'file-start'; id: string; name: string; mime: string }
   | { type: 'file-chunk'; id: string; data: string }
-  | { type: 'file-end'; id: string };
+  | { type: 'file-end'; id: string }
+  | { type: 'iap-init' }
+  | { type: 'iap-buy'; id: string }
+  | { type: 'iap-restore' };
+
+/** Messages from the native side (in-app purchases). */
+export type FromNative =
+  | { type: 'iap-state'; ready: boolean; owned: string[]; prices: Record<string, string> }
+  | { type: 'iap-result'; id: string; status: 'bought' | 'restored' | 'cancelled' | 'pending' | 'failed'; message?: string };
 
 type NativeWindow = Window & {
   ReactNativeWebView?: { postMessage(data: string): void };
-  /** Set by the native app before the page loads: saved values from durable storage. */
-  __ORBIT_NATIVE__?: { saved: Record<string, string> };
+  /** Set by the native app before the page loads: saved values from durable storage, and purchases it knows of. */
+  __ORBIT_NATIVE__?: { saved: Record<string, string>; owned?: string[] };
+  /** Called by the native app (through injectJavaScript) to deliver a message. */
+  __orbitFromNative?: (msg: FromNative) => void;
 };
 
 const w = (typeof window === 'undefined' ? {} : window) as NativeWindow;
@@ -21,6 +31,17 @@ export const isNative = Boolean(w.__ORBIT_NATIVE__);
 
 function post(msg: NativeMessage): void {
   w.ReactNativeWebView?.postMessage(JSON.stringify(msg));
+}
+
+/** Purchases the native app had cached at launch, so unlocks work from the first frame and offline. */
+export const bootOwned: string[] = w.__ORBIT_NATIVE__?.owned ?? [];
+
+export function postNative(msg: Extract<NativeMessage, { type: `iap-${string}` }>): void {
+  if (isNative) post(msg);
+}
+
+export function onNative(handler: (msg: FromNative) => void): void {
+  w.__orbitFromNative = handler;
 }
 
 export function tapHaptic(): void {

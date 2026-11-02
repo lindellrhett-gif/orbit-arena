@@ -1,8 +1,10 @@
 // Everything the app remembers lives on the device: score, streaks, daily history, saved sims and settings.
 // Nothing is sent anywhere.
 
+import type { SkinId, TrailId } from '../render/looks';
 import type { Spec } from '../sim/spec';
 import { loadValue, saveValue } from './platform';
+import { has } from './shop';
 
 export type Stats = {
   points: number;
@@ -19,10 +21,16 @@ export type DayLog = { played: number; called: number; points: number };
 
 export type SavedSim = { spec: Spec; savedAt: number };
 
-export type Settings = { sound: boolean; reducedMotion: boolean };
+/** `skin` and `trail` only show while Skins & Trails is owned; otherwise everything draws in the classic look. */
+export type Settings = { sound: boolean; reducedMotion: boolean; skin: SkinId; trail: TrailId };
 
-/** Free sandbox slots. (Phase 3 may sell unlimited slots; nothing else about the sandbox is limited.) */
+/** Free sandbox slots. Unlimited Slots raises it to MAX_SLOTS; nothing else about the sandbox is limited. */
 export const SANDBOX_SLOTS = 5;
+/** A ceiling even with Unlimited Slots, so the save stays small. Saved sims above the free limit are kept if the
+ * unlock goes away (e.g. the same save opened on the web); only new saves are blocked. */
+export const MAX_SLOTS = 200;
+
+export const slotLimit = (): number => (has('slots') ? MAX_SLOTS : SANDBOX_SLOTS);
 
 const KEY = 'orbit-arena:v1';
 
@@ -33,6 +41,8 @@ export const store: Saved = {
   settings: {
     sound: true,
     reducedMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+    skin: 'classic',
+    trail: 'classic',
   },
   days: {},
   sims: [],
@@ -46,7 +56,7 @@ export async function loadStore(): Promise<void> {
     Object.assign(store.stats, saved.stats ?? {});
     Object.assign(store.settings, saved.settings ?? {});
     store.days = saved.days ?? {};
-    store.sims = Array.isArray(saved.sims) ? saved.sims.slice(0, SANDBOX_SLOTS) : [];
+    store.sims = Array.isArray(saved.sims) ? saved.sims.slice(0, MAX_SLOTS) : [];
   } catch {
     // Corrupt save: start fresh.
   }
@@ -132,7 +142,7 @@ export function bestDays(n: number): { date: string; log: DayLog }[] {
 }
 
 export function saveSim(spec: Spec): boolean {
-  if (store.sims.length >= SANDBOX_SLOTS) return false;
+  if (store.sims.length >= slotLimit()) return false;
   store.sims.unshift({ spec, savedAt: Date.now() });
   saveStore();
   return true;

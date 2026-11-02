@@ -1,6 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (Phase 3)
+
+- Extras in the iOS app, one-time purchases through Apple (StoreKit, no server, nothing collected):
+  - HD Export: videos in 1080p with no watermark.
+  - Skins & Trails: Glossy, Neon and Planet balls; Comet, Rainbow and Sparkle trails. Every skin keeps the team
+    color readable, and locked ones can be previewed on a live mini arena.
+  - Melody Pack: Minuet in G, Morning Mood, The Blue Danube, New World Largo, Beethoven's 5th, Mozart's 40th, Frère
+    Jacques and London Bridge, for your own sims (and in the random feed for owners). Shared sims play any melody.
+  - Unlimited Slots: save up to 200 of your own sims instead of 5.
+  - Everything: all four in one purchase.
+- Extras screen (menu → See extras) with localized prices from the App Store and Restore purchases. On the web the
+  extras show locked, pointing to the iOS app.
+- Support page (`support.html`), privacy page updated for purchases.
+- Store builds no longer declare the dev client's local-network permission.
+
+## Earlier fixes after 0.2.0
 
 - Melodies now use the channel renderer's note lists (`MELODIES` in `scripts/orbit.py`), so a sim plays the same
   tune in the app and on the channel. Mountain King is back in B minor and Eine kleine Nachtmusik in G, and each tune

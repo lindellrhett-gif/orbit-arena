@@ -34,9 +34,12 @@ function pickCountries(rng: Rng, n: number): string[] {
   return rng.shuffle([...POPULAR_COUNTRIES]).slice(0, n);
 }
 
-/** Builds a random spec (without a seed) from an RNG. Daily sims use a date-seeded RNG, the endless feed a random one. */
-export function randomSpec(rng: Rng, kind: Spec['kind'], month: number): Omit<Spec, 'seed'> {
-  const melody = rng.pick(feedMelodies(month));
+/**
+ * Builds a random spec (without a seed) from an RNG. Daily sims use a date-seeded RNG, the endless feed a random one.
+ * `withPack` adds the Melody Pack tunes (random feed only, for owners).
+ */
+export function randomSpec(rng: Rng, kind: Spec['kind'], month: number, withPack = false): Omit<Spec, 'seed'> {
+  const melody = rng.pick(feedMelodies(month, withPack));
   switch (kind) {
     case 'escape': {
       const rings = rng.pick([1, 1, 1, 2, 3, 4, 5, 6]);
@@ -95,12 +98,12 @@ export function dailyItems(date: string): FeedItem[] {
 }
 
 /** Random sims for the endless feed. The UI layer may use Math.random; the sim itself never does. */
-export function randomItem(previousKind?: Spec['kind']): FeedItem {
+export function randomItem(previousKind?: Spec['kind'], withPack = false): FeedItem {
   const rng = makeRng(Math.floor(Math.random() * 2 ** 31));
   const kinds: Spec['kind'][] = ['escape', 'escape', 'battle', 'battle', 'race', 'orbit', 'grow', 'multiply', 'blocks'];
   let kind = rng.pick(kinds);
   if (kind === previousKind) kind = rng.pick(kinds);
-  const base = randomSpec(rng, kind, new Date().getMonth());
+  const base = randomSpec(rng, kind, new Date().getMonth(), withPack);
   const found = pickSeedWithin({ ...base, seed: 0 }, rng.int(1_000_000), 600);
   const spec: Spec = { ...base, seed: found.seed };
   return { spec, title: defaultTitle(spec), tag: '', preview: found.sim };

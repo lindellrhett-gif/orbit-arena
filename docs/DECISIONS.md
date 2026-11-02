@@ -112,3 +112,37 @@ in degrees per second and gravity and size as multipliers. orbit.py reads spin i
 px/s² (1500, race 900), `pull` for the black hole (2.6e7) and `ball_r` per kind, so `specToYaml` converts. `pull`
 is written as an integer because PyYAML reads `2.6e7` as a string. Every generated spec was checked with
 `orbit.py --dry`.
+
+## Phase 3: extras through StoreKit, no ads (2026-11-01)
+Rhett's calls: no ads for now, Apple StoreKit directly, five one-time unlocks (HD Export, Skins & Trails, Melody Pack,
+Unlimited Slots, and Everything), and on the web the extras show locked with a pointer to the iOS app. No ads keeps
+the App Store privacy label at "Data Not Collected" and avoids ad SDKs in an app with a young audience. StoreKit 2
+verifies transactions on the device, so one-time unlocks need no server and no third party (RevenueCat would have
+added an account and collected purchase data). The library is `expo-iap` (an Expo module; `react-native-iap` needs
+Nitro modules). The page asks over the bridge (`iap-init`, `iap-buy`, `iap-restore`) and the native side answers
+through `injectJavaScript` (`src/app/shop.ts` ↔ `mobile/App.tsx`). Owned product IDs are cached in AsyncStorage
+(`orbit-arena:owned`) and passed in at launch, so unlocks show from the first frame and work offline; StoreKit
+refreshes them every launch. Rules: extras change looks and what you can make, never the physics, picks or points,
+and a shared sim always plays in full for everyone.
+
+## Melody Pack without touching the daily sims (2026-11-01)
+The date's RNG picks the daily melody by position in `feedMelodies`, so the eight pack tunes are appended after the
+base list and filtered out unless asked for: the dailies don't shift and never use a pack tune. Owners get pack tunes
+in the random feed. orbit.py doesn't have them, so a submitted spec falls back to `fur_elise` with a comment naming
+the app's tune. The pack holds only tunes verified note for note (Minuet in G, Morning Mood, The Blue Danube, New
+World Largo, Beethoven's 5th, Mozart's 40th, Frère Jacques, London Bridge). Swan Lake, Vivaldi's Spring and Brahms'
+Lullaby were left out because their transcriptions couldn't be confirmed.
+
+## Skins and trails are drawing only (2026-11-01)
+Skins keep the team color readable (people pick by color) and live in the viewer's settings, not in share links.
+The classic look draws exactly as before. Above 40 balls (only multiply gets there) the fancier ones draw lighter
+versions: Sparkle glints only at each trail's head, Planet draws just the front of its ring, Neon one ring, and
+Rainbow one cycling color per ball. Measured on a full 250-ball frame they cost 0 to 50% over classic; in normal sims
+(up to 12 balls) the difference is under 1.5 ms. The planet ring is a pre-drawn sprite and the sparkle glints are plain
+rectangles, the cheapest things a canvas draws.
+
+## Dev-launcher keys stripped from store builds (2026-11-01)
+expo-dev-client adds `NSLocalNetworkUsageDescription` and `NSBonjourServices` so development builds can find the dev
+server. `mobile/plugins/withoutDevLauncherKeys.js` removes them unless `EAS_BUILD_PROFILE` is `development`, since
+App Review asks about permissions an app declares but doesn't use. Checked with `npx expo config --type introspect`
+(iOS prebuild itself doesn't run on Windows).

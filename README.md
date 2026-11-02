@@ -31,6 +31,8 @@ Other scripts:
 | `npx vite-node scripts/survey.ts battle 30` | Run lengths per kind, for tuning |
 | `npm run flags` | Re-packs the flag sprite sheet from flag-icons |
 | `npm run build:native` | Builds the single-file game for the iOS app into `mobile/src/webApp.ts` |
+| `node scripts/store-screens.mjs` | App Store screenshots at 1320x2868 into `screens/store/` (after `npm run build`); the store text is in `docs/APP_STORE.md` |
+| `npm run dev`, then `?unlock=all` | Local testing with every extra unlocked (dev server only, never in a build) |
 | `npx vite-node scripts/link-to-yaml.ts "<link>" [credit]` | Turns a viewer's share link into an orbit.py-style spec (for the channel) |
 
 ## iOS (Expo + EAS)
@@ -81,7 +83,8 @@ one (it then skips the TestFlight group check; the group already exists). Each u
 - `src/render/`: Canvas 2D drawing in the channel's look (1080x1920 logical canvas).
 - `src/audio/`: Web Audio synth and the public-domain melodies.
 - `src/app/`: feed (daily + random sims, picks), builder (sandbox), export (video), submit (YAML), on-device store,
-  the bridge to the iOS app.
+  the bridge to the iOS app, and the extras (`shop.ts` for unlocks and purchases, `shopView.ts` for the screen).
+- `src/render/looks.ts`: ball skins and trail effects (drawing only).
 - `mobile/`: the Expo iOS app (`App.tsx` is the native side of the bridge).
 - `docs/DECISIONS.md`: why things are built this way.
 
@@ -89,5 +92,7 @@ one (it then skips the TestFlight group check; the group already exists). Each u
 
 - Melodies: public domain only, synthesized in the app. No modern, film or game music, even "just the notes".
 - Points are a score only: nothing is wagered, bought or spent.
+- Extras (iOS, one-time purchases through Apple) change looks and what you can make, never the physics, picks or
+  points. Shared sims always play in full. No ads, no loot boxes, nothing random for sale.
 - No personal data, no accounts, no tracking. See `public/privacy.html`.
 - Flags: flag-icons (MIT), see `src/assets/flags/SOURCE.md`.

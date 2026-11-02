@@ -1,5 +1,5 @@
-// The sandbox: pick a kind, colors or countries, and the knobs that kind has, then play it. Up to SANDBOX_SLOTS
-// sims can be saved on the device.
+// The sandbox: pick a kind, colors or countries, and the knobs that kind has, then play it. Sims can be saved on
+// the device (SANDBOX_SLOTS of them, more with Unlimited Slots); Melody Pack tunes show locked until owned.
 
 import { MELODIES } from '../audio/melodies';
 import { flagCss } from '../render/flags';
@@ -7,7 +7,8 @@ import {
   COLORS, COLOR_NAMES, COUNTRIES, KINDS, type Kind, type MelodyId, type Spec, defaultTitle, isContest,
   shortCountryName, withDefaults,
 } from '../sim/spec';
-import { SANDBOX_SLOTS, deleteSim, saveSim, store } from './store';
+import { type ProductId, has } from './shop';
+import { SANDBOX_SLOTS, deleteSim, saveSim, slotLimit, store } from './store';
 
 type NumKey = 'rings' | 'gap_deg' | 'spin' | 'grow' | 'cap' | 'size' | 'gravity';
 type Knob = { key: NumKey; label: (k: Kind) => string; min: (k: Kind) => number; max: number; step: number; unit: string; kinds: Kind[] };
@@ -77,7 +78,13 @@ export function tidySpec(spec: Spec): Spec {
   return out;
 }
 
-export function openBuilder(root: HTMLElement, initial: Spec | null, onPlay: (r: BuildResult) => void, onClose: () => void): void {
+export function openBuilder(
+  root: HTMLElement,
+  initial: Spec | null,
+  onPlay: (r: BuildResult) => void,
+  onClose: () => void,
+  onShop: (product: ProductId) => void,
+): void {
   if (initial) {
     draft = { ...initial };
     useCountries = Boolean(initial.countries?.length);
@@ -235,13 +242,24 @@ export function openBuilder(root: HTMLElement, initial: Spec | null, onPlay: (r:
     const sec = el('section', 'panel-sec');
     sec.append(el('h3', '', 'Melody'));
     const select = el('select', 'select');
+    const pack = el('optgroup');
+    pack.label = has('melodies') ? 'Melody Pack' : 'Melody Pack 🔒';
     for (const [id, m] of Object.entries(MELODIES)) {
-      const o = el('option', '', m.name);
+      const o = el('option', '', m.pack && !has('melodies') ? `🔒 ${m.name}` : m.name);
       o.value = id;
       o.selected = id === draft.melody;
-      select.append(o);
+      (m.pack ? pack : select).append(o);
     }
-    select.onchange = () => (draft.melody = select.value as MelodyId);
+    select.append(pack);
+    select.onchange = () => {
+      const id = select.value as MelodyId;
+      if (MELODIES[id].pack && !has('melodies')) {
+        select.value = draft.melody;
+        onShop('melodies');
+        return;
+      }
+      draft.melody = id;
+    };
     const fitRow = el('label', 'toggle');
     const box = el('input');
     box.type = 'checkbox';
@@ -255,11 +273,18 @@ export function openBuilder(root: HTMLElement, initial: Spec | null, onPlay: (r:
 
   const actions = () => {
     const row = el('div', 'panel-actions');
-    const save = el('button', 'btn ghost', `Save (${store.sims.length}/${SANDBOX_SLOTS})`);
-    save.disabled = store.sims.length >= SANDBOX_SLOTS;
-    save.onclick = () => {
-      if (saveSim(tidySpec(draft))) render();
-    };
+    const limit = slotLimit();
+    const full = store.sims.length >= limit;
+    const save = el('button', 'btn ghost', limit === SANDBOX_SLOTS ? `Save (${store.sims.length}/${limit})` : `Save (${store.sims.length})`);
+    if (full && !has('slots')) {
+      save.textContent = '🔒 Unlimited slots';
+      save.onclick = () => onShop('slots');
+    } else {
+      save.disabled = full;
+      save.onclick = () => {
+        if (saveSim(tidySpec(draft))) render();
+      };
+    }
     const play = el('button', 'btn primary', '▶ Play');
     play.onclick = () => onPlay({ spec: tidySpec(draft), fit });
     row.append(save, play);

@@ -8,6 +8,7 @@ import {
 } from '../sim/sim';
 import { paddleEnds, ringEdgeAngles, type Ring } from '../sim/physics';
 import { flagSprite } from './flags';
+import { CLASSIC, type Look } from './looks';
 
 export const FONT = '"Saira Semi Condensed", "Bahnschrift", "Barlow", system-ui, sans-serif';
 const BG = '#07080e';
@@ -31,9 +32,13 @@ export class Renderer {
   private scale = 1;
   private bg: HTMLCanvasElement | null = null;
   private glow: HTMLCanvasElement | null = null;
+  private shine: HTMLCanvasElement | null = null;
+  private band: [HTMLCanvasElement, HTMLCanvasElement] | null = null;
   private trails = new Map<number, number[]>();
   private particles: Particle[] = [];
   reducedMotion = false;
+  /** Ball skin and trail effect (classic unless Skins & Trails is owned). */
+  look: Look = CLASSIC;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -136,7 +141,7 @@ export class Renderer {
       this.drawBlocks(sim);
     }
 
-    if (!view.hideContestants) this.drawBalls(sim);
+    if (!view.hideContestants) this.drawBalls(sim, view.time);
     else if (sim instanceof RaceSim) this.drawStartGate();
     this.drawParticles();
 
@@ -333,7 +338,7 @@ export class Renderer {
     this.text('START ORDER HIDDEN', CX, 390, `600 30px ${FONT}`, 'rgba(255,255,255,0.75)');
   }
 
-  private drawBalls(sim: Sim): void {
+  private drawBalls(sim: Sim, time: number): void {
     const ctx = this.ctx;
     const solo = sim instanceof EscapeSim || sim instanceof GrowSim;
     const crowd = sim.balls.length > 40;
@@ -341,28 +346,24 @@ export class Renderer {
     for (const b of sim.balls) {
       if (b.gone) continue;
       const t = this.trails.get(b.id);
-      if (!t) continue;
-      const color = sim.ballColor(b);
-      const n = t.length / 2;
-      ctx.fillStyle = color;
-      for (let i = 0; i < n - 1; i++) {
-        const k = (i + 1) / n;
-        ctx.globalAlpha = (b.live ? 0.32 : 0.12) * k;
-        ctx.beginPath();
-        ctx.arc(t[i * 2], t[i * 2 + 1], b.r * (0.35 + 0.6 * k), 0, Math.PI * 2);
-        ctx.fill();
-      }
+      if (t) this.drawTrail(t, b.r, b.id, sim.ballColor(b), b.live ? 1 : 0.38, time, crowd);
     }
     ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
     if (solo) {
       const b = sim.balls[0];
       const k = Math.min(2.6, 1.3 + 30 / b.r);
       ctx.drawImage(this.glowSprite(), b.x - b.r * k, b.y - b.r * k, b.r * 2 * k, b.r * 2 * k);
     }
+    const skin = this.look.skin;
     for (const b of sim.balls) {
       if (b.gone) continue;
       const team = sim.teams[b.team];
-      ctx.globalAlpha = b.live ? 1 : 0.4;
+      const color = sim.ballColor(b);
+      const alpha = b.live ? 1 : 0.4;
+      ctx.globalAlpha = alpha;
+      // Big crowds (multiply) get lighter versions of the fancier skins and trails to hold 60 fps.
+      if (skin === 'planet' && !crowd) this.planetBand(b.x, b.y, b.r, false);
       const flag = team.flag ? flagSprite(team.flag) : null;
       if (flag) {
         ctx.save();
@@ -372,22 +373,150 @@ export class Renderer {
         ctx.drawImage(flag.img, flag.sx, flag.sy, flag.size, flag.size, b.x - b.r, b.y - b.r, b.r * 2, b.r * 2);
         ctx.restore();
       } else {
-        ctx.fillStyle = sim.ballColor(b);
+        ctx.fillStyle = skin === 'neon' ? '#0b0c16' : color;
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = crowd ? 2 : Math.min(8, Math.max(2.5, b.r * 0.13));
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.stroke();
+      if (skin === 'neon') {
+        // A glowing ring in the team color around a dark core (or around the flag).
+        ctx.strokeStyle = color;
+        if (!crowd) {
+          ctx.globalAlpha = alpha * 0.3;
+          ctx.lineWidth = b.r * 0.5;
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.r * 1.02, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = alpha;
+        }
+        ctx.lineWidth = Math.max(2, b.r * (flag ? 0.16 : 0.3));
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r * (flag ? 0.94 : 0.84), 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        if (skin === 'glossy') ctx.drawImage(this.shineSprite(), b.x - b.r, b.y - b.r, b.r * 2, b.r * 2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = crowd ? 2 : Math.min(8, Math.max(2.5, b.r * (skin === 'glossy' ? 0.08 : 0.13)));
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      if (skin === 'planet') this.planetBand(b.x, b.y, b.r, true);
       if (sim.labels && b.live) {
         const size = sim.spec.kind === 'race' ? 22 : 26;
         this.label(team.name, b.x, b.y + b.r + size + 2, size, team.flag ? '#ffffff' : team.color);
       }
     }
     ctx.globalAlpha = 1;
+  }
+
+  /** One ball's trail: points oldest first as x, y pairs. `fade` dims trails of balls that are out. */
+  private drawTrail(t: number[], r: number, id: number, color: string, fade: number, time: number, crowd: boolean): void {
+    const ctx = this.ctx;
+    const n = t.length / 2;
+    const style = this.look.trail;
+    if (style === 'comet') {
+      // A tapered streak, brightest at the ball, added on top of the background like light.
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = color;
+      ctx.lineCap = 'round';
+      for (let i = 1; i < n; i++) {
+        const k = i / n;
+        ctx.globalAlpha = 0.5 * k * fade;
+        ctx.lineWidth = r * 2 * (0.12 + 0.8 * k);
+        ctx.beginPath();
+        ctx.moveTo(t[i * 2 - 2], t[i * 2 - 1]);
+        ctx.lineTo(t[i * 2], t[i * 2 + 1]);
+        ctx.stroke();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+      return;
+    }
+    if (style === 'sparkle') {
+      // Faint dots, then twinkling white glints every few points (plain rectangles: the cheapest thing to draw).
+      ctx.fillStyle = color;
+      for (let i = 0; i < n - 1; i++) {
+        const k = (i + 1) / n;
+        ctx.globalAlpha = 0.16 * k * fade;
+        ctx.beginPath();
+        ctx.arc(t[i * 2], t[i * 2 + 1], r * (0.3 + 0.4 * k), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < n - 1; i++) {
+        if (crowd ? i !== n - 2 : (i + id) % 3 !== 0) continue;
+        const k = (i + 1) / n;
+        const s = r * (0.3 + 0.5 * k);
+        const w = Math.max(1.5, s * 0.22);
+        ctx.globalAlpha = k * fade * (0.55 + 0.45 * Math.sin(time * 14 + i * 1.7 + id));
+        ctx.fillRect(t[i * 2] - s, t[i * 2 + 1] - w / 2, s * 2, w);
+        ctx.fillRect(t[i * 2] - w / 2, t[i * 2 + 1] - s, w, s * 2);
+      }
+      return;
+    }
+    for (let i = 0; i < n - 1; i++) {
+      const k = (i + 1) / n;
+      const x = t[i * 2];
+      const y = t[i * 2 + 1];
+      // Rainbow cycles along the trail; in crowds each ball takes one cycling color (fewer color changes).
+      const step = crowd ? 0 : i * 2.4;
+      ctx.fillStyle = style === 'rainbow' ? RAINBOW[Math.floor(time * 14 + step + id * 4.7) % RAINBOW.length] : color;
+      ctx.globalAlpha = (style === 'rainbow' ? 0.45 : 0.32) * k * fade;
+      ctx.beginPath();
+      ctx.arc(x, y, r * (0.35 + 0.6 * k), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  /** The planet skin's tilted ring: the back half goes behind the ball, the front half over it. */
+  private planetBand(x: number, y: number, r: number, front: boolean): void {
+    const [back, fore] = this.bandSprites();
+    // The sprites are 4r x 2r around a ball of radius 64 at their center.
+    this.ctx.drawImage(front ? fore : back, x - r * 2, y - r, r * 4, r * 2);
+  }
+
+  private bandSprites(): [HTMLCanvasElement, HTMLCanvasElement] {
+    if (this.band) return this.band;
+    const make = (front: boolean) => {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 128;
+      const g = c.getContext('2d')!;
+      g.strokeStyle = 'rgba(255,255,255,0.85)';
+      g.lineWidth = 9;
+      g.beginPath();
+      if (front) g.ellipse(128, 64, 102, 27, -0.38, 0, Math.PI);
+      else g.ellipse(128, 64, 102, 27, -0.38, Math.PI, Math.PI * 2);
+      g.stroke();
+      return c;
+    };
+    this.band = [make(false), make(true)];
+    return this.band;
+  }
+
+  /** Glossy skin: a soft highlight up and to the left and a darker rim, drawn over any color or flag. */
+  private shineSprite(): HTMLCanvasElement {
+    if (this.shine) return this.shine;
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d')!;
+    const shade = g.createRadialGradient(64, 64, 30, 64, 64, 64);
+    shade.addColorStop(0, 'rgba(0,0,0,0)');
+    shade.addColorStop(1, 'rgba(0,0,10,0.45)');
+    g.fillStyle = shade;
+    g.beginPath();
+    g.arc(64, 64, 64, 0, Math.PI * 2);
+    g.fill();
+    const hi = g.createRadialGradient(44, 40, 2, 48, 46, 46);
+    hi.addColorStop(0, 'rgba(255,255,255,0.9)');
+    hi.addColorStop(0.35, 'rgba(255,255,255,0.35)');
+    hi.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = hi;
+    g.beginPath();
+    g.arc(64, 64, 64, 0, Math.PI * 2);
+    g.fill();
+    this.shine = c;
+    return c;
   }
 
   private label(text: string, x: number, y: number, size: number, color: string): void {
@@ -458,6 +587,9 @@ export class Renderer {
     ctx.fillText(s, x, y);
   }
 }
+
+/** The rainbow trail's colors, made once (building an hsl() string per dot is slow with 250 balls). */
+const RAINBOW = Array.from({ length: 36 }, (_, i) => `hsl(${i * 10}, 100%, 62%)`);
 
 /** Neon hue that slowly cycles; rings are offset from each other. */
 export function ringColor(index: number, time: number): string {

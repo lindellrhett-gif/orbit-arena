@@ -35,8 +35,11 @@ Read this first, then `README.md` and `docs/DECISIONS.md`.
   determinism tests, PWA, iOS shell.
 - **Phase 2:** done in code and live on the web. All 7 kinds, over/under picks, sandbox with 5 saved slots,
   video export, daily challenge panel, submit-your-sim YAML. Version 0.2.0.
-- **iOS:** the first EAS production build was **running** at handoff (2026-10-30). Next: `eas submit`, then
-  TestFlight.
+- **iOS:** 0.2.0 (1) is in TestFlight (old layout and melodies). 0.2.0 (3), with the orbit.py melodies, the layout
+  fix and the transparent splash logo, was built 2026-11-01 with auto-submit to TestFlight.
+- **Phase 3 (2026-11-01):** built, version 0.3.0, not yet in a build. Rhett's calls: no ads for now, Apple StoreKit
+  directly (expo-iap), five one-time unlocks (HD Export $1.99, Skins & Trails $1.99, Melody Pack $0.99, Unlimited
+  Slots $0.99, Everything $3.99), extras locked on the web. Store text and screenshots: `docs/APP_STORE.md`.
 
 ## Immediately next
 
@@ -68,16 +71,23 @@ Read this first, then `README.md` and `docs/DECISIONS.md`.
    1,000 followers since it stays a Personal account), and the message to the channel session about
    "Play it yourself: link in bio".
 
+## Phase 3: what's left
+
+1. **Rhett, in App Store Connect:** accept the Paid Apps Agreement (banking and tax), then create the five
+   non-consumable in-app purchases from `docs/APP_STORE.md` (exact product IDs). Products don't load until both are
+   done.
+2. **One EAS production build** for 0.3.0 (expo-iap is a new native module), with `--auto-submit`. The free plan
+   allows only a few iOS builds a month, so batch any other native change into it.
+3. **Rhett tests purchases in TestFlight** (TestFlight purchases are free, through Apple's sandbox): buy one item,
+   Restore purchases, airplane mode, and HD export on the phone (1080p recording in WKWebView is unverified).
+4. **Submit for review** with the in-app purchases attached to the version (the first ones must go with an app
+   version). Then set `IOS_APP_URL` in `src/app/shop.ts` to the App Store link so the web points to it.
+
 ## Open questions for Rhett
 
 - Submissions: keep "copy and post in a comment or DM", or build a real inbox (stores viewer text, so moderation
   and privacy are involved)?
-- Phase 3: go-ahead, and anything ruled out:
-  - Ads: AdMob, non-personalized, only between sims.
-  - IAP: remove ads, HD export without watermark, skins and trails, more public-domain melodies, unlimited sandbox
-    slots. Probably via RevenueCat or StoreKit through Expo.
-  - Store listing: screenshots, description, age rating, privacy label "Data Not Collected".
-  - Each of these needs Rhett's accounts.
+- The support page lists GitHub issues and Instagram as contact. A support email instead?
 
 ## Working locally on Windows
 

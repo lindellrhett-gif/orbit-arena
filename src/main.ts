@@ -4,17 +4,20 @@ import './style.css';
 
 import { Synth } from './audio/synth';
 import { type BuildResult, openBuilder } from './app/builder';
-import { EXPORT_WIDTH, VideoRecorder, deliverFile, fileExtension, recordingMime } from './app/export';
+import { EXPORT_WIDTH, HD_EXPORT_WIDTH, VideoRecorder, deliverFile, fileExtension, recordingMime } from './app/export';
 import {
   type FeedItem, dailyItems, dateKey, guessLine, pickOptions, pickPrompt, pointsFor, randomItem, sharedItem,
   winningKey,
 } from './app/feed';
 import { isNative, openExternal, resultHaptic, shareLink, tapHaptic } from './app/platform';
+import { type ProductId, has, initShop, onShopChange } from './app/shop';
+import { openShop } from './app/shopView';
 import {
   bestDays, dailyStreak, loadStore, recentDays, recordPick, recordWatch, saveStore, store, winRate,
 } from './app/store';
 import { cleanCredit, specToYaml } from './app/submit';
 import { flagCss, preloadFlags } from './render/flags';
+import { CLASSIC, cleanLook } from './render/looks';
 import { FONT, Renderer, type View } from './render/renderer';
 import { pickSeedWithin } from './sim/seeds';
 import { FPS, H, RaceSim, type Sim, W, createSim, dryRun } from './sim/sim';
@@ -36,7 +39,7 @@ const el = {
   points: $('points'), streak: $('streak'), sound: $('sound'), buildBtn: $('build-btn'), menuBtn: $('menu-btn'),
   menuClose: $('menu-close'), drawer: $('drawer'), scrim: $('scrim'), stats: $('stats'), daily: $('daily'),
   optSound: $<HTMLInputElement>('opt-sound'), optMotion: $<HTMLInputElement>('opt-motion'), toast: $('toast'),
-  version: $('version'), builder: $('builder'),
+  version: $('version'), builder: $('builder'), shop: $('shop'), extrasBtn: $('extras-btn'), extrasNote: $('extras-note'),
 };
 
 const ICON_SOUND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
@@ -86,14 +89,14 @@ function buildQueue(): void {
   }
   const today = dateKey();
   for (const d of dailyItems(today)) if (!store.stats.daily.includes(d.dailyKey!)) queue.push(d);
-  if (queue.length === 0) queue.push(randomItem());
+  if (queue.length === 0) queue.push(randomItem(undefined, has('melodies')));
 }
 
 function nextItem(): FeedItem {
-  const next = queue.shift() ?? randomItem(lastKind);
+  const next = queue.shift() ?? randomItem(lastKind, has('melodies'));
   if (queue.length === 0) {
     // Prepare the following sim while this one plays, so Next is instant.
-    setTimeout(() => { if (queue.length === 0) queue.push(randomItem(next.spec.kind)); }, 400);
+    setTimeout(() => { if (queue.length === 0) queue.push(randomItem(next.spec.kind, has('melodies'))); }, 400);
   }
   return next;
 }
@@ -241,7 +244,8 @@ function toast(msg: string, ms = 1800): void {
 // ---- Video export ----------------------------------------------------------------------------------------------
 
 function exportView(time: number): View {
-  return { title: item.title, hideContestants: false, showResult: phase === 'result', time, watermark: WATERMARK };
+  const watermark = has('hd') ? undefined : WATERMARK;
+  return { title: item.title, hideContestants: false, showResult: phase === 'result', time, watermark };
 }
 
 async function saveVideo(): Promise<void> {
@@ -250,7 +254,8 @@ async function saveVideo(): Promise<void> {
   canvas.className = 'export-canvas';
   document.body.append(canvas);
   const r = new Renderer(canvas);
-  r.resize(EXPORT_WIDTH, 1);
+  r.resize(has('hd') ? HD_EXPORT_WIDTH : EXPORT_WIDTH, 1);
+  r.look = renderer.look;
   if (!mime) {
     // No video recording here: save a picture of the result and share the link instead.
     r.draw(sim, exportView(performance.now() / 1000));
@@ -312,7 +317,25 @@ function openSubmit(): void {
 function showBuilder(initial: Spec | null): void {
   setMenu(false);
   el.builder.hidden = false;
-  openBuilder(el.builder, initial, playBuilt, () => (el.builder.hidden = true));
+  openBuilder(el.builder, initial, playBuilt, () => (el.builder.hidden = true), showShop);
+}
+
+// ---- Extras ----------------------------------------------------------------------------------------------------
+
+/** Skins and trails show only while Skins & Trails is owned. */
+function applyLook(): void {
+  renderer.look = has('skins') ? cleanLook(store.settings.skin, store.settings.trail) : CLASSIC;
+  draw();
+}
+
+function showShop(focus: ProductId | null = null): void {
+  setMenu(false);
+  el.shop.hidden = false;
+  openShop(el.shop, focus, { onLook: applyLook, toast, openExternal }, () => {
+    el.shop.hidden = true;
+    // The sandbox may be open underneath: redraw it so new unlocks (melodies, slots) show.
+    if (!el.builder.hidden) showBuilder(null);
+  });
 }
 
 function playBuilt({ spec, fit }: BuildResult): void {
@@ -507,6 +530,7 @@ function wire(): void {
     saveStore();
   });
   el.menuBtn.addEventListener('click', () => setMenu(true));
+  el.extrasBtn.addEventListener('click', () => showShop());
   el.menuClose.addEventListener('click', () => setMenu(false));
   el.scrim.addEventListener('click', () => setMenu(false));
   if (isNative) {
@@ -520,7 +544,10 @@ function wire(): void {
 }
 
 async function boot(): Promise<void> {
+  initShop();
   await loadStore();
+  applyLook();
+  onShopChange(applyLook);
   renderer.reducedMotion = store.settings.reducedMotion;
   el.optMotion.checked = store.settings.reducedMotion;
   el.version.textContent = `v${__APP_VERSION__}`;

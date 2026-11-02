@@ -18,7 +18,7 @@ export default defineConfig({
       injectRegister: false,
       filename: 'sw.js',
       registerType: 'autoUpdate',
-      includeAssets: ['icons/*.png', 'privacy.html'],
+      includeAssets: ['icons/*.png', 'privacy.html', 'support.html'],
       manifest: {
         name: 'Orbit Arena',
         short_name: 'Orbit Arena',

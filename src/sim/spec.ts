@@ -13,6 +13,9 @@ export const isContest = (kind: Kind): boolean => CONTEST_KINDS.includes(kind);
 export const MELODY_IDS = [
   'fur_elise', 'ode_to_joy', 'mountain_king', 'twinkle', 'canon', 'nachtmusik', 'turkish_march', 'greensleeves',
   'jingle_bells',
+  // Melody Pack
+  'minuet_g', 'morning_mood', 'blue_danube', 'new_world', 'fifth_symphony', 'symphony_40', 'frere_jacques',
+  'london_bridge',
 ] as const;
 export type MelodyId = (typeof MELODY_IDS)[number];
 

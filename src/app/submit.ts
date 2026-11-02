@@ -2,6 +2,7 @@
 // plus a credit name. The app sends nothing anywhere: the viewer copies the link or YAML and posts it (a comment
 // on a Short, or a DM), and the channel's sessions render the best ones with credit.
 
+import { MELODIES } from '../audio/melodies';
 import { type Kind, type Spec, withDefaults } from '../sim/spec';
 import { defaultTitle } from '../sim/spec';
 
@@ -43,12 +44,10 @@ function ballR(spec: Spec, rings: number): number | undefined {
  */
 export function specToYaml(spec: Spec, credit: string, link: string): string {
   const s = withDefaults(spec);
-  const lines = [
-    '# Orbit Arena sim made in the app',
-    `kind: ${spec.kind}`,
-    `title: ${JSON.stringify(defaultTitle(spec))}`,
-    `melody: ${spec.melody}`,
-  ];
+  const lines = ['# Orbit Arena sim made in the app', `kind: ${spec.kind}`, `title: ${JSON.stringify(defaultTitle(spec))}`];
+  // Melody Pack tunes aren't in orbit.py's MELODIES (it would stop with a KeyError), so use its default tune.
+  if (MELODIES[spec.melody].pack) lines.push(`# app melody: ${spec.melody} (not in orbit.py yet)`, 'melody: fur_elise');
+  else lines.push(`melody: ${spec.melody}`);
   if (spec.countries?.length) lines.push(`countries: ${list(spec.countries)}`);
   else if (spec.colors?.length) lines.push(`colors: ${list(spec.colors)}`);
   const spin = `spin: ${round2((s.spin * Math.PI) / 180)}`; // the app's spin is degrees per second, orbit.py's radians

@@ -1,6 +1,6 @@
-// Video export: the sim is replayed onto a 720x1280 canvas with the watermark, and that canvas plus the synth's
-// audio are recorded together with MediaRecorder. Where recording isn't available, the fallback is a picture of
-// the result plus the share link.
+// Video export: the sim is replayed onto a 720x1280 canvas with the watermark (1080x1920 without it for HD Export
+// owners), and that canvas plus the synth's audio are recorded together with MediaRecorder. Where recording isn't
+// available, the fallback is a picture of the result plus the share link.
 
 import { isNative, sendFile } from './platform';
 
@@ -15,6 +15,7 @@ const MIME_TYPES = [
 ];
 
 export const EXPORT_WIDTH = 720;
+export const HD_EXPORT_WIDTH = 1080;
 
 export function recordingMime(): string | null {
   if (typeof MediaRecorder === 'undefined' || typeof HTMLCanvasElement.prototype.captureStream !== 'function') {
@@ -32,7 +33,9 @@ export class VideoRecorder {
     this.mime = mime;
     const stream = canvas.captureStream(60);
     for (const track of audio?.getAudioTracks() ?? []) stream.addTrack(track);
-    this.recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6_000_000 });
+    // 6 Mbit/s at 720p; scaled with the pixel count for HD so the extra detail isn't lost to compression.
+    const bits = Math.round((6_000_000 * (canvas.width * canvas.height)) / (EXPORT_WIDTH * 1280));
+    this.recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: Math.min(14_000_000, bits) });
     this.recorder.ondataavailable = (e) => {
       if (e.data.size > 0) this.chunks.push(e.data);
     };

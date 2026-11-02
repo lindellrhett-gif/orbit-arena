@@ -2,7 +2,7 @@
   "expo": {
     "name": "Orbit Arena",
     "slug": "orbit-arena",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -36,7 +36,9 @@
           "enableBackgroundPlayback": false
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-iap",
+      "./plugins/withoutDevLauncherKeys"
     ],
     "extra": {
       "eas": {
