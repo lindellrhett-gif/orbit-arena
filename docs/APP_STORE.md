@@ -37,9 +37,10 @@ The first in-app purchases have to be submitted together with an app version: on
 | Age rating | 4+ (answer None to everything, including Simulated Gambling: points are a score, nothing is wagered) |
 | Price | Free |
 | Privacy policy URL | https://lindellrhett-gif.github.io/orbit-arena/privacy.html |
+| License agreement | Apple's standard EULA (leave as is); `terms.html` adds the game's own terms |
 | Support URL | https://lindellrhett-gif.github.io/orbit-arena/support.html |
 | Marketing URL | https://lindellrhett-gif.github.io/orbit-arena/ |
-| Copyright | 2026 Rhett Lindell |
+| Copyright | 2026 Rhett Lindell (change to the LLC's legal name once the account is converted) |
 | App Privacy | Data Not Collected |
 
 ## Version page
@@ -64,7 +65,7 @@ ramps, circle a black hole, multiply and smash blocks. Every bounce plays the ne
 - Three new daily sims every day, the same for everyone
 - Streaks and points (just a score: nothing to buy, nothing to bet)
 - Build your own sim: pick the kind, colors or countries, rings, gaps, spin, gravity and melody
-- Save a video of any run and share it to TikTok, Reels or Shorts
+- Save a video of any run and share it anywhere
 - Share links replay the exact same run for your friends
 - Works offline, no account, no ads, no tracking
 
@@ -75,6 +76,37 @@ classic melodies, and unlimited saved sims. They never change picks or points.
 
 Extras: HD video export with no watermark, ball skins and trails, a melody pack and unlimited saved sims. Better
 layout on the newest iPhones.
+
+## Availability: as many countries as possible
+
+Pricing and Availability → Countries or Regions: select all, then remove these two (checked 2026-11-06):
+
+| Remove | Why |
+|---|---|
+| China mainland | Every game needs a government game license (ISBN), which a foreign developer can only get through a Chinese publisher. Hong Kong, Macao and Taiwan are separate storefronts and stay in. |
+| Vietnam | Since February 2025 games need a license from Vietnam's Ministry of Information and Communications; Apple removes unlicensed ones. |
+
+That leaves every other App Store country. Before release:
+
+- **EU (27 countries):** declare trader status (Business → EU Digital Services Act). As a business selling extras, the
+  LLC is a trader, and its address, phone number and email are shown on the EU product page. Use business contact
+  details (a registered agent's or virtual office address, a business phone) if home details shouldn't be public.
+  Apps without trader status aren't available in the EU.
+- **Prices:** set the US price; Apple converts it for every storefront and collects sales tax or VAT where it's
+  required.
+- **Small Business Program:** enroll (Business section) to pay Apple 15% instead of 30% on extras.
+- **Russia:** stays listed, but people there have had very limited ways to pay on the App Store since 2022, so expect
+  few sales; the free game works.
+- **Language:** English works in every storefront. Translating the store page later helps people find the app.
+
+## Legal checklist (all done in the code, 2026-11-06)
+
+- Open-source notices: `public/licenses.html` (regenerate with `npm run licenses` after dependency changes);
+  fdlibm's notice is also kept in the minified game.
+- Terms of use (`terms.html`): points have no value, purchases through Apple, permission to repost submitted sims,
+  flags for identification only, a photosensitivity warning, and a liability limit that keeps consumer rights.
+- Privacy policy: nothing collected, no cookies, hosting, rights. Store privacy label: Data Not Collected.
+- No third-party trademarks in the store text. The game loads nothing from other companies.
 
 ## App Review notes
 

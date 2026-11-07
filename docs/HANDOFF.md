@@ -88,6 +88,13 @@ Read this first, then `README.md` and `docs/DECISIONS.md`.
 - Submissions: keep "copy and post in a comment or DM", or build a real inbox (stores viewer text, so moderation
   and privacy are involved)?
 - The support page lists GitHub issues and Instagram as contact. A support email instead?
+- After the LLC conversion: the LLC's legal name and state (terms, privacy page and the App Store copyright line
+  should name it; the terms have no governing-law clause until then), and business contact details for the EU trader
+  declaration.
+- Registering the "Orbit Arena" trademark (USPTO, classes 9 and 41): no conflicting mark turned up on 2026-11-06,
+  but a registration costs money, so it's Rhett's call. A lawyer's review of the terms is also worth it once the LLC
+  sells extras.
+- Launch countries: everything except China mainland and Vietnam (see `docs/APP_STORE.md`).
 
 ## Working locally on Windows
 

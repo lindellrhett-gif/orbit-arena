@@ -31,6 +31,7 @@ Other scripts:
 | `npx vite-node scripts/survey.ts battle 30` | Run lengths per kind, for tuning |
 | `npm run flags` | Re-packs the flag sprite sheet from flag-icons |
 | `npm run build:native` | Builds the single-file game for the iOS app into `mobile/src/webApp.ts` |
+| `npm run licenses` | Regenerates `public/licenses.html` (open-source notices) after dependency changes |
 | `node scripts/store-screens.mjs` | App Store screenshots at 1320x2868 into `screens/store/` (after `npm run build`); the store text is in `docs/APP_STORE.md` |
 | `npm run dev`, then `?unlock=all` | Local testing with every extra unlocked (dev server only, never in a build) |
 | `npx vite-node scripts/link-to-yaml.ts "<link>" [credit]` | Turns a viewer's share link into an orbit.py-style spec (for the channel) |

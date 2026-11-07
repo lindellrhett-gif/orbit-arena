@@ -12,7 +12,8 @@
     "snapshots:update": "UPDATE_SNAPSHOTS=1 vitest run tests/determinism.test.ts",
     "daily": "vite-node scripts/build-daily.ts",
     "flags": "node scripts/copy-flags.mjs",
-    "build:native": "tsc --noEmit && vite build -c vite.native.config.ts && node scripts/build-native.mjs"
+    "build:native": "tsc --noEmit && vite build -c vite.native.config.ts && node scripts/build-native.mjs",
+    "licenses": "node scripts/licenses.mjs"
   },
   "dependencies": {
     "@fontsource/saira-semi-condensed": "^5.3.0"

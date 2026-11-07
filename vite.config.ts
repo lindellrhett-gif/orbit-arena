@@ -9,6 +9,8 @@ export default defineConfig({
   // Relative paths work both on GitHub Pages (/orbit-arena/) and inside the iOS app.
   base: './',
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+  // Keep "/*!" license notices (fdlibm's, in src/sim/dmath.ts) in the minified build, as their licenses ask.
+  esbuild: { legalComments: 'eof' },
   build: {
     target: 'es2020',
     rollupOptions: { input: { main: 'index.html' } },
@@ -18,7 +20,7 @@ export default defineConfig({
       injectRegister: false,
       filename: 'sw.js',
       registerType: 'autoUpdate',
-      includeAssets: ['icons/*.png', 'privacy.html', 'support.html'],
+      includeAssets: ['icons/*.png', 'privacy.html', 'support.html', 'terms.html'],
       manifest: {
         name: 'Orbit Arena',
         short_name: 'Orbit Arena',

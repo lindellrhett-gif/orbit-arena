@@ -1,6 +1,11 @@
 // Deterministic trig. ECMAScript only pins down + - * / and sqrt to IEEE-754 correctly rounded results;
 // Math.sin/cos/atan2 differ between V8, JavaScriptCore and SpiderMonkey. The physics uses these instead so the
-// same (spec, seed) gives the same run on every browser. Kernels and constants are from fdlibm.
+// same (spec, seed) gives the same run on every browser. Kernels and constants are from fdlibm, whose license asks
+// for this notice to be kept (the "/*!" form keeps it in the minified build too):
+
+/*! fdlibm: Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+ * Developed at SunPro, a Sun Microsystems, Inc. business. Permission to use, copy, modify, and distribute this
+ * software is freely granted, provided that this notice is preserved. */
 
 export const PI = 3.141592653589793;
 export const TAU = 6.283185307179586;

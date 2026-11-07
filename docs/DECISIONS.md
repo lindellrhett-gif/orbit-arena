@@ -146,3 +146,14 @@ expo-dev-client adds `NSLocalNetworkUsageDescription` and `NSBonjourServices` so
 server. `mobile/plugins/withoutDevLauncherKeys.js` removes them unless `EAS_BUILD_PROFILE` is `development`, since
 App Review asks about permissions an app declares but doesn't use. Checked with `npx expo config --type introspect`
 (iOS prebuild itself doesn't run on Windows).
+
+## Legal pages and launch countries (2026-11-06)
+Open-source licenses ask for their notices to ship with the software, so `npm run licenses` writes
+`public/licenses.html` from what's actually installed: the game's own third-party parts (flag-icons, the Saira font,
+Workbox, fdlibm) and every production dependency of the iOS app, grouped by license. Nothing copyleft ships: the
+MPL and dual GPL entries (lightningcss, node-forge) are build tools, and node-forge is used under its BSD option.
+fdlibm's notice is a `/*!` comment kept in the minified build (`esbuild.legalComments: 'eof'`). `terms.html` covers
+the risks specific to this app: points with no value (away from gambling rules), purchases under Apple's terms,
+permission to repost submitted sims, flags for identification only, a photosensitivity warning and a liability limit
+that keeps non-waivable consumer rights. Launch is every App Store country except China mainland (game ISBN needs a
+Chinese publisher) and Vietnam (game license required since February 2025); the EU needs the trader declaration.
