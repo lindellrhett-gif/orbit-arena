@@ -166,9 +166,20 @@ export default function App() {
     }
   };
 
+  /**
+   * StoreKit 2 already keeps non-consumables on the device (Transaction.currentEntitlements), so restoring is
+   * mostly reading them again. AppStore.sync() (restorePurchases) is only a best-effort extra: it asks for the
+   * Apple ID and often fails in TestFlight or when the sign-in sheet is dismissed, and that must not hide
+   * purchases StoreKit already holds.
+   */
   const restore = async () => {
+    if (!iap.current.ready) await connectStore();
     try {
       await restorePurchases();
+    } catch {
+      // Fall through: the entitlements read below decides the result.
+    }
+    try {
       await refreshOwned();
       sendResult('restore', 'restored');
     } catch {

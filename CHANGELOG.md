@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- iOS: Restore purchases no longer says it can't reach the App Store when Apple's sync step fails (common in
+  TestFlight or when the Apple ID sheet is dismissed); it reads the purchases StoreKit already holds.
 - Legal pages name the operator, Bluestem Software LLC (North Dakota), with a governing-law line, and list the
   support email rhett@bluestemsoftware.com. App Store copyright line updated.
 - Terms of use (`terms.html`): points have no value, purchases through Apple, permission to repost submitted sims,
