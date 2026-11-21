@@ -40,7 +40,7 @@ The first in-app purchases have to be submitted together with an app version: on
 | License agreement | Apple's standard EULA (leave as is); `terms.html` adds the game's own terms |
 | Support URL | https://lindellrhett-gif.github.io/orbit-arena/support.html |
 | Marketing URL | https://lindellrhett-gif.github.io/orbit-arena/ |
-| Copyright | 2026 Rhett Lindell (change to the LLC's legal name once the account is converted) |
+| Copyright | 2026 Bluestem Software LLC |
 | App Privacy | Data Not Collected |
 
 ## Version page
