@@ -16,7 +16,8 @@
         "usesNonExemptEncryption": false
       },
       "infoPlist": {
-        "UIStatusBarStyle": "UIStatusBarStyleLightContent"
+        "UIStatusBarStyle": "UIStatusBarStyleLightContent",
+        "NSPhotoLibraryAddUsageDescription": "Lets you save your Orbit Arena videos to Photos."
       }
     },
     "plugins": [
@@ -38,7 +39,8 @@
       ],
       "expo-sharing",
       "expo-iap",
-      "./plugins/withoutDevLauncherKeys"
+      "./plugins/withoutDevLauncherKeys",
+      "./plugins/withSceneLifecycle"
     ],
     "extra": {
       "eas": {

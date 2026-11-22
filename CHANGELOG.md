@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- iOS: the app uses the scene life cycle (Expo's scene delegate, `plugins/withSceneLifecycle.js`), which iOS 27
+  requires of apps built with Xcode 27; builds can now be made locally with `eas build --local`. Expo packages
+  updated to the latest SDK 57 patch releases.
+- iOS: Save Video in the share sheet works for exported videos (the app now says why it adds to Photos; it
+  can only add, never read your library).
 - iOS: Restore purchases no longer says it can't reach the App Store when Apple's sync step fails (common in
   TestFlight or when the Apple ID sheet is dismissed); it reads the purchases StoreKit already holds.
 - Legal pages name the operator, Bluestem Software LLC (North Dakota), with a governing-law line, and list the

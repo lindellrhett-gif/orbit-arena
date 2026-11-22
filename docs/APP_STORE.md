@@ -110,6 +110,26 @@ That leaves every other App Store country. Before release:
 
 ## App Review notes
 
-No sign-in. All in-app purchases are non-consumable and unlock looks or creation options only; points can't be bought.
-Restore purchases is on the Extras screen (menu → See extras). Sound plays with the silent switch on, by design: the
-notes are the point of the app.
+Paste into App Review Information → Notes (under 4,000 characters). Apple asked for these answers on the first
+submission (Guideline 2.1, Information Needed); attach the screen recording described below in the same section.
+
+```
+1. Screen recording: attached. Recorded on an iPhone running the latest iOS, starting from launch. It shows the feed (pick before a sim, watch it, see the result and points), Build your own, saving a video, and the Extras screen: the extras in use, and Restore purchases. The recording uses a TestFlight account that already bought the extras, so they show as Owned; on a new account each shows its price and buys through Apple's sheet. The app has no accounts, so there is no registration, login or account deletion.
+
+2. Purpose and audience: Orbit Arena is a casual game for all ages built around short physics simulations: balls bouncing inside spinning rings, color and flag battles, marble races. Before each run you guess the outcome (which color wins, how long an escape takes, over or under a number), then watch it play out with bounce notes from public-domain melodies. Points are only a score kept on the device; nothing is wagered and points can't be bought or exchanged. You can also build your own sims, save them, share a link and export a video. The value is a relaxing, satisfying thing to watch with a small guessing game on top, and a creative tool for making your own clips.
+
+3. Setup: none. No login, no sample files. Open the app and the feed starts. Main features:
+- Feed: tap a pick, the sim plays, the result card shows your points. Tap Next for another.
+- Daily challenge: open the menu (top right); three sims a day are listed under Daily challenge.
+- Build your own: the build button in the top bar. Choose a kind and settings, play it, then save it.
+- Save video: on a result card tap Save video, then pick Save Video in the share sheet.
+- Extras (in-app purchases): menu → See extras. Five non-consumable products: HD Export, Skins & Trails, Melody Pack, Unlimited Slots and Everything. Restore purchases is on the same screen.
+Sound plays with the silent switch on, by design: the bounce notes are the point of the app (it mixes with other audio).
+
+4. External services: Apple StoreKit for in-app purchases, nothing else. The game runs fully on the device and works offline; it has no server, no analytics, no ads, no sign-in and no AI services. It collects no personal data. Shared links point to our web version of the game on GitHub Pages; links to our YouTube, TikTok and Instagram pages open in Safari.
+
+5. Regions: the app works the same in all regions. Prices come from the App Store for the user's storefront. The app is in English.
+
+6. Regulated industry / third-party material: not applicable. The melodies are public-domain compositions arranged and synthesized in the app. Country flags (from the open-source flag-icons set, MIT license) are used only to identify countries in the flag battles. Licenses are listed in the app's licenses page. There is no user-generated content shown to other users: shared sims are just game settings encoded in a link, with no free text.
+```
+

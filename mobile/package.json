@@ -4,14 +4,15 @@
   "main": "index.ts",
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
-    "expo": "~57.0.31",
+    "expo": "~57.0.33",
+    "expo-asset": "~57.0.21",
     "expo-audio": "~57.0.5",
-    "expo-dev-client": "~57.0.20",
+    "expo-dev-client": "~57.0.21",
     "expo-file-system": "~57.0.7",
     "expo-haptics": "~57.0.3",
     "expo-iap": "^6.4.1",
-    "expo-sharing": "~57.0.24",
-    "expo-splash-screen": "~57.0.10",
+    "expo-sharing": "~57.0.26",
+    "expo-splash-screen": "~57.0.11",
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
     "react": "19.2.3",
@@ -28,8 +29,5 @@
     "build:ios": "eas build --platform ios --profile production",
     "submit:ios": "eas submit --platform ios --latest"
   },
-  "private": true,
-  "overrides": {
-    "expo-asset": "~57.0.20"
-  }
+  "private": true
 }
