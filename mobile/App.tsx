@@ -14,7 +14,7 @@ import * as Sharing from 'expo-sharing';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { Linking, Share, StyleSheet, View } from 'react-native';
+import { AppState, Linking, Share, StyleSheet, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { WEB_APP_HTML } from './src/webApp';
 
@@ -46,13 +46,24 @@ type BuyStatus = 'bought' | 'restored' | 'cancelled' | 'pending' | 'failed';
 
 const UTI: Record<string, string> = { 'video/mp4': 'public.mpeg-4', 'image/png': 'public.png' };
 
+/** What a StoreKit error means for the buyer. The same error can arrive both as the rejected requestPurchase and
+ * through purchaseErrorListener, so both paths use this and whichever comes first reports it. */
+const statusFor = (error: unknown): BuyStatus => {
+  const code = (error as { code?: unknown } | null)?.code;
+  if (code === ErrorCode.UserCancelled) return 'cancelled';
+  if (code === ErrorCode.DeferredPayment || code === ErrorCode.Pending) return 'pending';
+  return 'failed';
+};
+
+type Boot = { saved: Record<string, string>; owned: string[]; gen: number };
+
 const shortId = (sku: string): string | null => {
   const id = sku.startsWith(STORE_PREFIX) ? sku.slice(STORE_PREFIX.length) : '';
   return PRODUCT_IDS.includes(id) ? id : null;
 };
 
 export default function App() {
-  const [boot, setBoot] = useState<{ saved: Record<string, string>; owned: string[] } | null>(null);
+  const [boot, setBoot] = useState<Boot | null>(null);
   // Exported videos arrive from the page in base64 chunks, are written to the cache, then shared.
   const incoming = useRef<{ id: string; file: File; mime: string } | null>(null);
   const web = useRef<WebView>(null);
@@ -67,6 +78,12 @@ export default function App() {
     toPage({ type: 'iap-state', ready, owned, prices });
   };
   const sendResult = (id: string, status: BuyStatus) => toPage({ type: 'iap-result', id, status });
+  /** Ends the purchase in progress (if it is still `id`) and tells the page how it went. */
+  const settle = (id: string, status: BuyStatus) => {
+    if (iap.current.buying !== id) return;
+    iap.current.buying = null;
+    sendResult(id, status);
+  };
   const setOwned = (owned: string[]) => {
     iap.current.owned = [...new Set(owned)];
     void AsyncStorage.setItem(OWNED_KEY, JSON.stringify(iap.current.owned)).catch(() => {});
@@ -97,10 +114,12 @@ export default function App() {
     sendState();
   };
 
-  useEffect(() => {
-    // Play bounce notes even with the silent switch on, mixed with any music the user is playing.
-    void setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' }).catch(() => {});
-    void AsyncStorage.multiGet([...STORE_KEYS, OWNED_KEY])
+  /**
+   * Reads what the page needs before it loads: saved values and cached purchases. Runs at launch and again when iOS
+   * kills the web view's process (the page then reloads with fresh values; `gen` remounts the WebView).
+   */
+  const loadBoot = () =>
+    AsyncStorage.multiGet([...STORE_KEYS, OWNED_KEY])
       .then((pairs) => {
         const saved: Record<string, string> = {};
         let owned: string[] = [];
@@ -115,54 +134,61 @@ export default function App() {
             }
           }
         }
-        iap.current.owned = owned;
-        setBoot({ saved, owned });
+        // StoreKit may already have replayed a purchase while storage was being read: keep it.
+        iap.current.owned = [...new Set([...owned, ...iap.current.owned])];
+        setBoot((prev) => ({ saved, owned: iap.current.owned, gen: (prev?.gen ?? 0) + 1 }));
       })
-      .catch(() => setBoot({ saved: {}, owned: [] }));
+      .catch(() => setBoot((prev) => ({ saved: {}, owned: iap.current.owned, gen: (prev?.gen ?? 0) + 1 })));
+
+  useEffect(() => {
+    // Play bounce notes even with the silent switch on, mixed with any music the user is playing.
+    void setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' }).catch(() => {});
+    void loadBoot();
 
     // Purchases, including ones approved later through Ask to Buy (StoreKit replays unfinished ones at launch).
     const bought = purchaseUpdatedListener((purchase) => {
       const id = shortId(purchase.productId);
       if (!id) return;
       if (purchase.purchaseState === 'pending') {
-        if (iap.current.buying === id) sendResult(id, 'pending');
+        // Waiting for approval (Ask to Buy): this purchase is no longer in progress; it arrives later as purchased.
+        settle(id, 'pending');
         return;
       }
+      // Only a completed purchase unlocks anything.
+      if (purchase.purchaseState !== 'purchased') return;
       void finishTransaction({ purchase, isConsumable: false }).catch(() => {});
       setOwned([...iap.current.owned, id]);
-      if (iap.current.buying === id) {
-        iap.current.buying = null;
-        sendResult(id, 'bought');
-      }
+      settle(id, 'bought');
     });
     const failed = purchaseErrorListener((error) => {
       const id = iap.current.buying;
-      if (!id) return;
-      iap.current.buying = null;
-      const status: BuyStatus =
-        error.code === ErrorCode.UserCancelled ? 'cancelled'
-        : error.code === ErrorCode.DeferredPayment || error.code === ErrorCode.Pending ? 'pending'
-        : 'failed';
-      sendResult(id, status);
+      if (id) settle(id, statusFor(error));
+    });
+    // If the App Store couldn't be reached at launch, try again whenever the app comes back to the foreground.
+    const foreground = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && !iap.current.ready) void connectStore();
     });
     return () => {
       bought.remove();
       failed.remove();
+      foreground.remove();
       void endConnection().catch(() => {});
     };
   }, []);
 
   const buy = async (id: string) => {
-    if (!PRODUCT_IDS.includes(id) || iap.current.buying) return;
+    // The page waits for an answer to every request, so never return without one.
+    if (!PRODUCT_IDS.includes(id) || iap.current.buying) {
+      sendResult(id, 'failed');
+      return;
+    }
     iap.current.buying = id;
     try {
+      if (!iap.current.ready) await connectStore();
       // The outcome arrives through the listeners above.
       await requestPurchase({ request: { apple: { sku: STORE_PREFIX + id } }, type: 'in-app' });
-    } catch {
-      if (iap.current.buying === id) {
-        iap.current.buying = null;
-        sendResult(id, 'failed');
-      }
+    } catch (error) {
+      settle(id, statusFor(error));
     }
   };
 
@@ -250,6 +276,7 @@ export default function App() {
     <View style={styles.root}>
       <StatusBar style="light" />
       <WebView
+        key={boot.gen}
         ref={web}
         style={styles.web}
         source={{ html: WEB_APP_HTML, baseUrl: BASE_URL }}
@@ -257,6 +284,12 @@ export default function App() {
         injectedJavaScriptBeforeContentLoaded={bootScript}
         onMessage={onMessage}
         onLoadEnd={() => void SplashScreen.hideAsync()}
+        // iOS can kill the web view's process (memory pressure, long in the background), which leaves a blank
+        // screen: load the game again with what was saved. A purchase in progress still lands through StoreKit.
+        onContentProcessDidTerminate={() => {
+          iap.current.buying = null;
+          void loadBoot();
+        }}
         // Tapped links (socials, privacy) open in Safari instead of replacing the game.
         onShouldStartLoadWithRequest={(req) => {
           if (req.navigationType !== 'click') return true;

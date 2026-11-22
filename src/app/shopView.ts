@@ -4,7 +4,7 @@
 import { SKINS, TRAILS, type Look, cleanLook } from '../render/looks';
 import { Renderer } from '../render/renderer';
 import { CX, CY, R0, type Sim, createSim } from '../sim/sim';
-import { IOS_APP_URL, PRODUCTS, type ProductId, buy, canBuy, has, onShopChange, owns, restore, shop } from './shop';
+import { IOS_APP_URL, PRODUCTS, type ProductId, buy, canBuy, has, onShopChange, owns, refreshShop, restore, shop } from './shop';
 import { saveStore, store } from './store';
 
 export type ShopHooks = {
@@ -32,6 +32,10 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
   let raf = 0;
   let sim: Sim;
   let renderer: Renderer | null = null;
+  // One preview for the life of the screen: re-renders (chip taps, store updates) move it, never restart it.
+  const frame = el('div', 'look-preview');
+  const canvas = el('canvas');
+  frame.append(canvas);
 
   const close = (): void => {
     cancelAnimationFrame(raf);
@@ -57,8 +61,9 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
     const status = await restore();
     busy = null;
     render();
-    if (status === 'failed') hooks.toast("Couldn't reach the App Store. Try again in a moment.", 3000);
-    else hooks.toast(shop.owned.size ? 'Purchases restored' : 'No purchases to restore on this Apple ID', 2600);
+    if (status === 'restored') {
+      hooks.toast(shop.owned.size ? 'Purchases restored' : 'No purchases to restore on this Apple ID', 2600);
+    } else hooks.toast("Couldn't reach the App Store. Try again in a moment.", 3000);
   };
 
   const header = () => {
@@ -151,9 +156,6 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
     const sec = el('section', 'panel-sec');
     sec.append(el('h3', '', 'Skins & trails'));
     const wrap = el('div', 'look');
-    const frame = el('div', 'look-preview');
-    const canvas = el('canvas');
-    frame.append(canvas);
     const pickers = el('div', 'look-pickers');
     pickers.append(
       chips('Ball', SKINS, preview.skin, (id) => setLook(cleanLook(id, preview.trail))),
@@ -164,7 +166,6 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
     }
     wrap.append(frame, pickers);
     sec.append(wrap);
-    startPreview(frame, canvas);
     return sec;
   };
 
@@ -183,8 +184,7 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
   };
 
   // A real battle sim, zoomed in on the ring so the skins are big enough to see.
-  const startPreview = (frame: HTMLElement, canvas: HTMLCanvasElement): void => {
-    cancelAnimationFrame(raf);
+  const startPreview = (): void => {
     const r = new Renderer(canvas);
     r.look = preview;
     renderer = r;
@@ -196,6 +196,7 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
     let last = performance.now();
     let acc = 0;
     const tick = (now: number) => {
+      // Stops once this screen's preview is gone (closed, or replaced by a newer Extras screen).
       if (!frame.isConnected) return;
       const size = frame.clientWidth;
       const k = size / VIEW;
@@ -220,12 +221,14 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
     root.replaceChildren(header(), intro(), products(), looks(), footer());
   };
 
+  // main.ts redraws the game on shop changes; this screen only re-renders itself.
   const stopListening = onShopChange(() => {
     if (!root.isConnected || root.hidden) return;
-    hooks.onLook();
     render();
   });
 
   render();
+  startPreview();
+  refreshShop();
   if (focus) root.querySelector('.product.focus')?.scrollIntoView({ block: 'center' });
 }

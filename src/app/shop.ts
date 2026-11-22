@@ -72,20 +72,41 @@ function receive(msg: FromNative): void {
   }
 }
 
-function request(id: string, send: () => void): Promise<BuyStatus> {
+/** How long to wait for the native side before giving up on a request (Apple's sheet can stay open a while). */
+const BUY_TIMEOUT_MS = 5 * 60_000;
+const RESTORE_TIMEOUT_MS = 90_000;
+
+function request(id: string, timeoutMs: number, send: () => void): Promise<BuyStatus> {
   if (!isNative || pending) return Promise.resolve('unavailable');
   return new Promise((done) => {
-    pending = { id, done };
+    // If no answer ever comes (the web view reloaded, a message was lost), stop waiting so the Extras screen
+    // doesn't stay stuck. A purchase that still completes unlocks through the next iap-state.
+    const timer = setTimeout(() => {
+      if (pending?.done === finish) {
+        pending = null;
+        done('unavailable');
+      }
+    }, timeoutMs);
+    const finish = (s: BuyStatus) => {
+      clearTimeout(timer);
+      done(s);
+    };
+    pending = { id, done: finish };
     send();
   });
 }
 
 export function buy(id: ProductId): Promise<BuyStatus> {
-  return request(id, () => postNative({ type: 'iap-buy', id }));
+  return request(id, BUY_TIMEOUT_MS, () => postNative({ type: 'iap-buy', id }));
 }
 
 export function restore(): Promise<BuyStatus> {
-  return request('restore', () => postNative({ type: 'iap-restore' }));
+  return request('restore', RESTORE_TIMEOUT_MS, () => postNative({ type: 'iap-restore' }));
+}
+
+/** Asks the native app for prices and purchases again (it reconnects to the App Store if launch couldn't). */
+export function refreshShop(): void {
+  if (isNative) postNative({ type: 'iap-init' });
 }
 
 /** Connects to the App Store through the native app (prices and current purchases arrive as an iap-state). */

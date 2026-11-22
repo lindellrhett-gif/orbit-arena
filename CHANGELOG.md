@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- iOS purchases: cancelling Apple's sheet or sending a purchase for Ask to Buy approval no longer shows "The purchase
+  didn't go through"; the Extras screen can't get stuck with every button disabled (a request that never gets an
+  answer gives up after a few minutes); Restore only says "restored" when it actually asked the App Store; prices
+  load again when the app returns to the foreground or Extras opens, if the App Store was unreachable at launch;
+  only completed purchases unlock anything; a purchase replayed at launch isn't lost to the saved list.
+- iOS: if iOS kills the game's web view (low memory, a long time in the background) the game reloads instead of
+  staying blank.
+- Extras screen: the skin preview keeps playing as you tap through skins instead of restarting.
 - iOS: the app uses the scene life cycle (Expo's scene delegate, `plugins/withSceneLifecycle.js`), which iOS 27
   requires of apps built with Xcode 27; builds can now be made locally with `eas build --local`. Expo packages
   updated to the latest SDK 57 patch releases.
