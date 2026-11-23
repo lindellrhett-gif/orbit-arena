@@ -10,8 +10,8 @@ export type ProductId = Unlock | 'everything';
 /** App Store product IDs are this prefix plus the ProductId. They can never be changed or reused. */
 export const STORE_ID_PREFIX = 'com.rhettlindell.orbitarena.';
 
-/** The App Store page, once the app is live; until then the web says the extras are coming to iOS. */
-export const IOS_APP_URL: string | null = null;
+/** The App Store page: the web version's Extras screen links here. */
+export const IOS_APP_URL: string | null = 'https://apps.apple.com/app/id6828600863';
 
 export type Product = { id: ProductId; name: string; blurb: string; unlocks: Unlock[] };
 

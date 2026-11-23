@@ -6,7 +6,7 @@ build your own, save it as a video and share it. Every bounce plays the next not
 [Instagram](https://www.instagram.com/orbitarena_/)).
 
 - **Web:** https://lindellrhett-gif.github.io/orbit-arena/ (installable PWA, works offline)
-- **iOS:** Expo app in `mobile/`, built with EAS (see below)
+- **iOS:** [App Store](https://apps.apple.com/app/id6828600863) (Expo app in `mobile/`, built with EAS, see below)
 
 ## Develop
 

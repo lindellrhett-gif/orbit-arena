@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The app is on the App Store: the web's Extras screen links to it ("Get the app"), as do the README and support page.
 - iOS purchases: cancelling Apple's sheet or sending a purchase for Ask to Buy approval no longer shows "The purchase
   didn't go through"; the Extras screen can't get stuck with every button disabled (a request that never gets an
   answer gives up after a few minutes); Restore only says "restored" when it actually asked the App Store; prices
