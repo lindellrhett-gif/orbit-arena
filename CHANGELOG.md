@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.1
 
 - The app is on the App Store: the web's Extras screen links to it ("Get the app"), as do the README and support page.
 - iOS purchases: cancelling Apple's sheet or sending a purchase for Ask to Buy approval no longer shows "The purchase
@@ -11,6 +11,11 @@
 - iOS: if iOS kills the game's web view (low memory, a long time in the background) the game reloads instead of
   staying blank.
 - Extras screen: the skin preview keeps playing as you tap through skins instead of restarting.
+
+## 0.3.0 on the App Store (released 2026-11-23, build 9)
+
+Fixes and pages added while 0.3.0 was in review, on top of Phase 3 below:
+
 - iOS: the app uses the scene life cycle (Expo's scene delegate, `plugins/withSceneLifecycle.js`), which iOS 27
   requires of apps built with Xcode 27; builds can now be made locally with `eas build --local`. Expo packages
   updated to the latest SDK 57 patch releases.

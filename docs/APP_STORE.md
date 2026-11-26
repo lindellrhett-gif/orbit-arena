@@ -30,7 +30,7 @@ The first in-app purchases have to be submitted together with an app version: on
 
 | Field | Value |
 |---|---|
-| Name | Orbit Arena |
+| Name | Orbit Arena: Physics Sims (from 0.3.1; 0.3.0 shipped as "Orbit Arena". Another iOS game named "Orbit Arena" came out 2026-04-10, so the store name adds what the app is. The home-screen name stays "Orbit Arena".) |
 | Subtitle | Pick the winner. Watch it go. |
 | Primary category | Games → Casual |
 | Secondary category | Entertainment |
