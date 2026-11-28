@@ -469,6 +469,21 @@ function setMenu(open: boolean): void {
   el.scrim.hidden = !open;
 }
 
+/**
+ * Android's back button: closes the top screen (Extras, the sandbox, the menu, the submit sheet) and returns true,
+ * or returns false when nothing is open so the app can close. Called by the native app (mobile/App.tsx).
+ */
+function goBack(): boolean {
+  const closeButton = (panel: HTMLElement) => panel.querySelector<HTMLButtonElement>('.panel-head button');
+  if (!el.shop.hidden) closeButton(el.shop)?.click();
+  else if (!el.builder.hidden) closeButton(el.builder)?.click();
+  else if (el.drawer.classList.contains('open')) setMenu(false);
+  else if (!el.submitSheet.hidden) el.submitClose.click();
+  else return false;
+  return true;
+}
+(window as Window & { __orbitBack?: () => boolean }).__orbitBack = goBack;
+
 function wire(): void {
   el.menuBtn.innerHTML = ICON_MENU;
   el.buildBtn.innerHTML = ICON_BUILD;

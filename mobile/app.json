@@ -20,6 +20,22 @@
         "NSPhotoLibraryAddUsageDescription": "Lets you save your Orbit Arena videos to Photos."
       }
     },
+    "android": {
+      "package": "com.rhettlindell.orbitarena",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#07080e"
+      },
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
+      ]
+    },
     "plugins": [
       [
         "expo-splash-screen",
@@ -38,7 +54,14 @@
         }
       ],
       "expo-sharing",
-      "expo-iap",
+      [
+        "expo-iap",
+        {
+          "android": {
+            "store": "play"
+          }
+        }
+      ],
       "./plugins/withoutDevLauncherKeys",
       "./plugins/withSceneLifecycle"
     ],

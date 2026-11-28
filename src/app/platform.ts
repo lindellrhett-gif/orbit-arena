@@ -1,4 +1,4 @@
-// Native extras when running inside the iOS app (an Expo app that shows this page in a WebView), web fallbacks
+// Native extras when running inside the iOS or Android app (an Expo app that shows this page in a WebView), web fallbacks
 // otherwise. The app talks to the native side with postMessage; see mobile/App.tsx for the other end.
 
 type NativeMessage =
@@ -21,13 +21,15 @@ export type FromNative =
 type NativeWindow = Window & {
   ReactNativeWebView?: { postMessage(data: string): void };
   /** Set by the native app before the page loads: saved values from durable storage, and purchases it knows of. */
-  __ORBIT_NATIVE__?: { saved: Record<string, string>; owned?: string[] };
+  __ORBIT_NATIVE__?: { saved: Record<string, string>; owned?: string[]; platform?: 'ios' | 'android' };
   /** Called by the native app (through injectJavaScript) to deliver a message. */
   __orbitFromNative?: (msg: FromNative) => void;
 };
 
 const w = (typeof window === 'undefined' ? {} : window) as NativeWindow;
 export const isNative = Boolean(w.__ORBIT_NATIVE__);
+/** Which app the page runs in (older iOS builds didn't say, so iOS is the default), or null on the web. */
+export const nativePlatform: 'ios' | 'android' | null = isNative ? (w.__ORBIT_NATIVE__?.platform ?? 'ios') : null;
 
 function post(msg: NativeMessage): void {
   w.ReactNativeWebView?.postMessage(JSON.stringify(msg));
@@ -108,7 +110,7 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
-/** Sends a file (a recorded video or a picture) to the iOS app, which saves it and opens the share sheet. */
+/** Sends a file (a recorded video or a picture) to the app, which saves it and opens the share sheet. */
 export async function sendFile(blob: Blob, name: string): Promise<void> {
   const id = `${Date.now()}`;
   post({ type: 'file-start', id, name, mime: blob.type });

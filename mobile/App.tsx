@@ -1,6 +1,6 @@
-// The iOS app: the Orbit Arena game (built from the web app into one HTML file) in a full-screen WebView, plus
-// the native bits the page asks for over postMessage: haptics, the share sheet, durable storage, opening links and
-// in-app purchases (StoreKit, through expo-iap).
+// The iOS and Android app: the Orbit Arena game (built from the web app into one HTML file) in a full-screen WebView,
+// plus the native bits the page asks for over postMessage: haptics, the share sheet, durable storage, opening links
+// and in-app purchases (StoreKit on iOS, Google Play Billing on Android, both through expo-iap).
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAudioModeAsync } from 'expo-audio';
@@ -13,15 +13,15 @@ import {
 import * as Sharing from 'expo-sharing';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
-import { AppState, Linking, Share, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, BackHandler, Linking, Platform, Share, StyleSheet, View } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { WEB_APP_HTML } from './src/webApp';
 
 void SplashScreen.preventAutoHideAsync();
 
 const STORE_KEYS = ['orbit-arena:v1'];
-// One-time unlocks (see src/app/shop.ts). App Store product IDs are the prefix plus the short id.
+// One-time unlocks (see src/app/shop.ts). App Store and Google Play product IDs are the prefix plus the short id.
 const STORE_PREFIX = 'com.rhettlindell.orbitarena.';
 const PRODUCT_IDS = ['everything', 'hd', 'skins', 'melodies', 'slots'];
 // What's owned, cached so unlocks show from the first frame and work offline; StoreKit refreshes it at launch.
@@ -40,7 +40,8 @@ type Message =
   | { type: 'file-end'; id: string }
   | { type: 'iap-init' }
   | { type: 'iap-buy'; id: string }
-  | { type: 'iap-restore' };
+  | { type: 'iap-restore' }
+  | { type: 'back-unhandled' };
 
 type BuyStatus = 'bought' | 'restored' | 'cancelled' | 'pending' | 'failed';
 
@@ -89,10 +90,19 @@ export default function App() {
     void AsyncStorage.setItem(OWNED_KEY, JSON.stringify(iap.current.owned)).catch(() => {});
     sendState();
   };
-  /** Non-consumables StoreKit still holds for this Apple ID (StoreKit 2 verifies them on the device). */
+  /** Non-consumables the store still holds for this account (StoreKit 2 verifies them on the device; Google Play
+   * lists only purchases that are paid, not pending or refunded). */
   const refreshOwned = async () => {
     const purchases = await getAvailablePurchases({ onlyIncludeActiveItemsIOS: true });
-    setOwned(purchases.map((p) => shortId(p.productId)).filter((id): id is string => id !== null));
+    const owned = purchases.filter((p) => p.purchaseState === 'purchased');
+    // Google Play refunds a purchase that isn't acknowledged within 3 days. One that completed while the app was
+    // closed (a pending payment that cleared) may only show up here, so acknowledge it now.
+    for (const p of owned) {
+      if (Platform.OS === 'android' && 'isAcknowledgedAndroid' in p && p.isAcknowledgedAndroid === false) {
+        void finishTransaction({ purchase: p, isConsumable: false }).catch(() => {});
+      }
+    }
+    setOwned(owned.map((p) => shortId(p.productId)).filter((id): id is string => id !== null));
   };
   const connectStore = async () => {
     if (!iap.current.ready) {
@@ -164,6 +174,14 @@ export default function App() {
       const id = iap.current.buying;
       if (id) settle(id, statusFor(error));
     });
+    // Android's back button closes the page's top screen first (window.__orbitBack in src/main.ts); with nothing
+    // open the page answers back-unhandled and the app closes as usual.
+    const back = BackHandler.addEventListener('hardwareBackPress', () => {
+      web.current?.injectJavaScript(
+        "if (!(window.__orbitBack && window.__orbitBack())) window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'back-unhandled' })); true;",
+      );
+      return true;
+    });
     // If the App Store couldn't be reached at launch, try again whenever the app comes back to the foreground.
     const foreground = AppState.addEventListener('change', (state) => {
       if (state === 'active' && !iap.current.ready) void connectStore();
@@ -172,6 +190,7 @@ export default function App() {
       bought.remove();
       failed.remove();
       foreground.remove();
+      back.remove();
       void endConnection().catch(() => {});
     };
   }, []);
@@ -186,7 +205,8 @@ export default function App() {
     try {
       if (!iap.current.ready) await connectStore();
       // The outcome arrives through the listeners above.
-      await requestPurchase({ request: { apple: { sku: STORE_PREFIX + id } }, type: 'in-app' });
+      const sku = STORE_PREFIX + id;
+      await requestPurchase({ request: { apple: { sku }, google: { skus: [sku] } }, type: 'in-app' });
     } catch (error) {
       settle(id, statusFor(error));
     }
@@ -266,12 +286,25 @@ export default function App() {
       case 'iap-restore':
         void restore();
         break;
+      case 'back-unhandled':
+        BackHandler.exitApp();
+        break;
     }
   };
 
+  // The page decides at startup whether it runs in the app (src/app/platform.ts), so the boot values go into the
+  // HTML itself as its first script. injectedJavaScriptBeforeContentLoaded sometimes ran too late on Android cold
+  // starts, and the game then booted as the website (no store, no saved progress). `<` is escaped so a saved value
+  // can't close the script tag.
+  const html = useMemo(() => {
+    if (!boot) return '';
+    const data = JSON.stringify({ saved: boot.saved, owned: boot.owned, platform: Platform.OS }).replace(/</g, '\\u003c');
+    // A function replacer, so `$&` or `$'` inside a saved value isn't read as a replacement pattern.
+    return WEB_APP_HTML.replace('<head>', () => `<head><script>window.__ORBIT_NATIVE__ = ${data};</script>`);
+  }, [boot]);
+
   if (!boot) return <View style={styles.root} />;
 
-  const bootScript = `window.__ORBIT_NATIVE__ = ${JSON.stringify(boot)}; true;`;
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -279,9 +312,8 @@ export default function App() {
         key={boot.gen}
         ref={web}
         style={styles.web}
-        source={{ html: WEB_APP_HTML, baseUrl: BASE_URL }}
+        source={{ html, baseUrl: BASE_URL }}
         originWhitelist={['*']}
-        injectedJavaScriptBeforeContentLoaded={bootScript}
         onMessage={onMessage}
         onLoadEnd={() => void SplashScreen.hideAsync()}
         // iOS can kill the web view's process (memory pressure, long in the background), which leaves a blank
@@ -290,11 +322,18 @@ export default function App() {
           iap.current.buying = null;
           void loadBoot();
         }}
-        // Tapped links (socials, privacy) open in Safari instead of replacing the game.
+        // Tapped links (socials, privacy) open in the browser instead of replacing the game. iOS says which loads
+        // are taps; Android doesn't, so there every web page other than the game itself opens outside.
         onShouldStartLoadWithRequest={(req) => {
-          if (req.navigationType !== 'click') return true;
+          const external =
+            Platform.OS === 'ios' ? req.navigationType === 'click' : /^https?:/.test(req.url) && req.url !== BASE_URL;
+          if (!external) return true;
           void Linking.openURL(req.url);
           return false;
+        }}
+        // Links with target="_blank" ask for a new window on Android.
+        onOpenWindow={(e) => {
+          if (/^https:\/\//.test(e.nativeEvent.targetUrl)) void Linking.openURL(e.nativeEvent.targetUrl);
         }}
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}

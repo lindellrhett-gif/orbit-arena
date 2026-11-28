@@ -1,10 +1,10 @@
-// The Extras screen: the one-time unlocks (bought through Apple in the iOS app, shown locked on the web), the skin
+// The Extras screen: the one-time unlocks (bought through Apple or Google Play in the apps, shown locked on the web), the skin
 // and trail picker with a live preview, and Restore Purchases. Locked skins can be previewed but not used.
 
 import { SKINS, TRAILS, type Look, cleanLook } from '../render/looks';
 import { Renderer } from '../render/renderer';
 import { CX, CY, R0, type Sim, createSim } from '../sim/sim';
-import { IOS_APP_URL, PRODUCTS, type ProductId, buy, canBuy, has, onShopChange, owns, refreshShop, restore, shop } from './shop';
+import { ANDROID_APP_URL, IOS_APP_URL, PRODUCTS, STORE, type ProductId, buy, canBuy, has, onShopChange, owns, refreshShop, restore, shop } from './shop';
 import { saveStore, store } from './store';
 
 export type ShopHooks = {
@@ -62,8 +62,8 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
     busy = null;
     render();
     if (status === 'restored') {
-      hooks.toast(shop.owned.size ? 'Purchases restored' : 'No purchases to restore on this Apple ID', 2600);
-    } else hooks.toast("Couldn't reach the App Store. Try again in a moment.", 3000);
+      hooks.toast(shop.owned.size ? 'Purchases restored' : `No purchases to restore on this ${STORE.account}`, 2600);
+    } else hooks.toast(`Couldn't reach ${STORE.name}. Try again in a moment.`, 3000);
   };
 
   const header = () => {
@@ -78,20 +78,27 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
 
   const intro = () => {
     const p = el('p', 'hint');
-    const appUrl = IOS_APP_URL;
-    if (canBuy()) {
-      p.textContent = 'One-time purchases through Apple. They change looks and what you can make, never picks or points.';
-    } else if (appUrl) {
-      p.append('Extras are sold in the Orbit Arena iOS app. ');
-      const a = el('a', '', 'Get the app');
-      a.href = appUrl;
+    const link = (text: string, url: string) => {
+      const a = el('a', '', text);
+      a.href = url;
       a.onclick = (ev) => {
         ev.preventDefault();
-        hooks.openExternal(appUrl);
+        hooks.openExternal(url);
       };
-      p.append(a);
+      return a;
+    };
+    const apps = [
+      IOS_APP_URL && link('iPhone', IOS_APP_URL),
+      ANDROID_APP_URL && link('Android', ANDROID_APP_URL),
+    ].filter((a): a is HTMLAnchorElement => Boolean(a));
+    if (canBuy()) {
+      p.textContent = `One-time purchases through ${STORE.by}. They change looks and what you can make, never picks or points.`;
+    } else if (apps.length) {
+      p.append('Extras are sold in the Orbit Arena app. Get it for ');
+      apps.forEach((a, i) => p.append(...(i ? [' or ', a] : [a])));
+      p.append('.');
     } else {
-      p.textContent = 'Extras are coming soon in the Orbit Arena iOS app. Everything else here is free.';
+      p.textContent = 'Extras are coming soon in the Orbit Arena app. Everything else here is free.';
     }
     return p;
   };
@@ -103,7 +110,7 @@ export function openShop(root: HTMLElement, focus: ProductId | null, hooks: Shop
       return b;
     }
     if (!canBuy()) {
-      const b = el('button', 'price', 'iOS app');
+      const b = el('button', 'price', 'In the app');
       b.disabled = true;
       return b;
     }

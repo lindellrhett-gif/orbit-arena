@@ -1,27 +1,33 @@
 // App Store screenshots at the 6.9-inch size (1320x2868): npm run build && node scripts/store-screens.mjs [outDir]
 // A 440x956 phone at 3x with the iPhone's safe areas added by hand (Chromium has no notch). The Extras shot runs
-// the page as the iOS app does, with example prices, so the cards show prices rather than "iOS app".
+// the page as the app does, with example prices, so the cards show prices rather than "In the app".
+// Google Play: node scripts/store-screens.mjs screens/play/phone android  (1080x1920, 9:16: Play allows at most
+// 2:1, so the iPhone shots don't fit; a 360x640 phone at 3x with an Android status bar's space).
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 import { preview } from 'vite';
 
 const out = process.argv[2] ?? 'screens/store';
+const android = process.argv[3] === 'android';
 mkdirSync(out, { recursive: true });
 const server = await preview({ preview: { port: 4180 }, logLevel: 'error' });
 const base = server.resolvedUrls.local[0];
-const SAFE = '#app { padding-top: 62px !important; padding-bottom: 34px !important; } .panel { padding-top: 74px !important; }';
+const SAFE = android
+  ? '#app { padding-top: 24px !important; } .panel { padding-top: 36px !important; }'
+  : '#app { padding-top: 62px !important; padding-bottom: 34px !important; } .panel { padding-top: 74px !important; }';
 const PRICES = { everything: '$3.99', hd: '$1.99', skins: '$1.99', melodies: '$0.99', slots: '$0.99' };
 
 const browser = await chromium.launch();
-const context = await browser.newContext({ viewport: { width: 440, height: 956 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+const viewport = android ? { width: 360, height: 640 } : { width: 440, height: 956 };
+const context = await browser.newContext({ viewport, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
 
 async function open(query, { native = false } = {}) {
   const page = await context.newPage();
   if (native) {
-    await page.addInitScript(() => {
-      window.__ORBIT_NATIVE__ = { saved: {}, owned: [] };
+    await page.addInitScript((android) => {
+      window.__ORBIT_NATIVE__ = { saved: {}, owned: [], platform: android ? 'android' : 'ios' };
       window.ReactNativeWebView = { postMessage() {} };
-    });
+    }, android);
   }
   await page.goto(`${base}${query ? `?${query}` : ''}`);
   await page.addStyleTag({ content: SAFE });
@@ -63,6 +69,8 @@ const shots = [
     await p.waitForTimeout(600);
     await p.locator('#shop .chip-btn', { hasText: 'Planet' }).click();
     await p.locator('#shop .chip-btn', { hasText: 'Comet' }).click();
+    // Tapping the chips scrolls the shorter Android screen down to them; show the prices instead.
+    if (android) await p.evaluate(() => document.querySelector('#shop')?.scrollTo(0, 0));
     await p.waitForTimeout(2500);
   }, true],
 ];

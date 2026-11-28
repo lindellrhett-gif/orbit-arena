@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased: Android
+
+- Android app for Google Play (package `com.rhettlindell.orbitarena`, same as iOS): purchases through Google Play
+  Billing with the same five product IDs, acknowledged so Google doesn't refund them; Restore reads what Google Play
+  holds for the account. Tested on the internal track: prices load, a test purchase unlocks, and it comes back after
+  the app's data is wiped.
+- Android back button closes the top screen (Extras, sandbox, menu, submit sheet) before leaving the app.
+- Links open in the browser; Save Video opens Android's share sheet. Adaptive launcher icon; unused permissions
+  (microphone, storage, overlay, media) are blocked.
+- The web app names the store it's in (Apple or Google Play) on the Extras screen and in toasts; the website points
+  to the iPhone app and, once it's live, the Android one. Terms, privacy and support pages cover Google Play.
+- Fix (both apps): the game now gets its saved progress and purchases inside the page itself at startup. On Android
+  the old injected script sometimes ran too late, and the game started as the website: no store, no saved
+  progress (about 1 in 4 cold starts in testing; 0 in 8 after the fix).
+- `docs/PLAY_STORE.md` (what's entered in Play Console), `scripts/android-assets.mjs` (icon and feature graphic) and
+  an `android` mode for `scripts/store-screens.mjs` (1080x1920 Play screenshots).
+
 ## 0.3.1
 
 - The app is on the App Store: the web's Extras screen links to it ("Get the app"), as do the README and support page.
